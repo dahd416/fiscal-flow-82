@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
+import { PasswordInputWithValidation } from '@/components/ui/password-input-with-validation';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -35,6 +36,16 @@ export default function Auth() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validar contraseña
+    const hasMinLength = password.length >= 6;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    
+    if (!hasMinLength || !hasUpperCase || !hasLowerCase) {
+      return;
+    }
+    
     setLoading(true);
     try {
       await signUp(email, password, firstName, lastName, rfc);
@@ -57,9 +68,20 @@ export default function Auth() {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validar contraseña
+    const hasMinLength = newPassword.length >= 6;
+    const hasUpperCase = /[A-Z]/.test(newPassword);
+    const hasLowerCase = /[a-z]/.test(newPassword);
+    
+    if (!hasMinLength || !hasUpperCase || !hasLowerCase) {
+      return;
+    }
+    
     if (newPassword !== confirmPassword) {
       return;
     }
+    
     setLoading(true);
     try {
       await updatePassword(newPassword);
@@ -87,12 +109,11 @@ export default function Auth() {
             <form onSubmit={handleResetPassword} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="new-password">Nueva Contraseña</Label>
-                <PasswordInput
+                <PasswordInputWithValidation
                   id="new-password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
-                  minLength={6}
                 />
               </div>
               <div className="space-y-2">
@@ -254,12 +275,11 @@ export default function Auth() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Contraseña</Label>
-                  <PasswordInput
+                  <PasswordInputWithValidation
                     id="signup-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    minLength={6}
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
