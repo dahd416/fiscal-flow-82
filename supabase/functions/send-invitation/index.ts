@@ -38,11 +38,12 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
 
-    // Get current user
+    // Get current user from JWT token
+    const token = authHeader.replace("Bearer ", "");
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getUser(token);
 
     if (userError || !user) {
       throw new Error("Unauthorized");
@@ -77,7 +78,7 @@ const handler = async (req: Request): Promise<Response> => {
 
 
     // Generate unique token
-    const token = crypto.randomUUID();
+    const invitationToken = crypto.randomUUID();
 
     // Create invitation record
     const { data: invitation, error: invitationError } = await supabase
@@ -85,7 +86,7 @@ const handler = async (req: Request): Promise<Response> => {
       .insert({
         email,
         invited_by: user.id,
-        token,
+        token: invitationToken,
         status: "pending",
       })
       .select()
@@ -98,7 +99,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Create invitation link
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const invitationLink = `${supabaseUrl.replace("supabase.co", "lovable.app")}/auth?invitation=${token}`;
+    const invitationLink = `${supabaseUrl.replace("supabase.co", "lovable.app")}/auth?invitation=${invitationToken}`;
 
     // Send email
     const emailResponse = await resend.emails.send({
