@@ -1,8 +1,9 @@
 import { ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Receipt, Calendar, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, Receipt, Calendar, LogOut, UserPlus } from 'lucide-react';
 
 interface LayoutProps {
   children: ReactNode;
@@ -10,6 +11,7 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const { signOut, user } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const location = useLocation();
 
   const navigation = [
@@ -45,6 +47,14 @@ export function Layout({ children }: LayoutProps) {
               </div>
             </div>
             <div className="flex items-center gap-4">
+              {isAdmin && (
+                <Link to="/invite-user">
+                  <Button variant="default" className="gap-2">
+                    <UserPlus className="h-4 w-4" />
+                    <span className="hidden sm:inline">Invitar Usuario</span>
+                  </Button>
+                </Link>
+              )}
               <span className="text-sm text-muted-foreground hidden sm:inline">
                 {user?.email}
               </span>

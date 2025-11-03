@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import Transactions from "./pages/Transactions";
 import VatPeriods from "./pages/VatPeriods";
+import InviteUser from "./pages/InviteUser";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
             <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
             <Route path="/vat-periods" element={<ProtectedRoute><VatPeriods /></ProtectedRoute>} />
+            <Route path="/invite-user" element={<ProtectedRoute><InviteUser /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
