@@ -5,11 +5,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Mail, Phone, Building, User } from 'lucide-react';
+import { Plus, Mail, Phone, Building, User, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Client {
@@ -27,6 +37,8 @@ export default function Clients() {
   const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [open, setOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -104,19 +116,72 @@ export default function Clients() {
       return;
     }
 
-    const { error } = await supabase.from('clients').insert([
-      { ...formData, user_id: user!.id }
-    ]);
+    if (editingClient) {
+      // Update existing client
+      const { error } = await supabase
+        .from('clients')
+        .update(formData)
+        .eq('id', editingClient.id);
+
+      if (error) {
+        toast.error('Error al actualizar cliente');
+      } else {
+        toast.success('Cliente actualizado exitosamente');
+        handleCloseDialog();
+        fetchClients();
+      }
+    } else {
+      // Create new client
+      const { error } = await supabase.from('clients').insert([
+        { ...formData, user_id: user!.id }
+      ]);
+
+      if (error) {
+        toast.error('Error al agregar cliente');
+      } else {
+        toast.success('Cliente agregado exitosamente');
+        handleCloseDialog();
+        fetchClients();
+      }
+    }
+  };
+
+  const handleEdit = (client: Client) => {
+    setEditingClient(client);
+    setFormData({
+      first_name: client.first_name,
+      last_name: client.last_name || '',
+      email: client.email || '',
+      phone: client.phone || '',
+      vat_number: client.vat_number || '',
+      address: client.address || '',
+      person_type: client.person_type || '',
+    });
+    setOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteClientId) return;
+
+    const { error } = await supabase
+      .from('clients')
+      .delete()
+      .eq('id', deleteClientId);
 
     if (error) {
-      toast.error('Error al agregar cliente');
+      toast.error('Error al eliminar cliente');
     } else {
-      toast.success('Cliente agregado exitosamente');
-      setOpen(false);
-      setFormData({ first_name: '', last_name: '', email: '', phone: '', vat_number: '', address: '', person_type: '' });
-      setEmailError('');
+      toast.success('Cliente eliminado exitosamente');
+      setDeleteClientId(null);
       fetchClients();
     }
+  };
+
+  const handleCloseDialog = () => {
+    setOpen(false);
+    setEditingClient(null);
+    setFormData({ first_name: '', last_name: '', email: '', phone: '', vat_number: '', address: '', person_type: '' });
+    setEmailError('');
   };
 
   return (
@@ -127,7 +192,7 @@ export default function Clients() {
             <h2 className="text-3xl font-bold tracking-tight">Clientes</h2>
             <p className="text-muted-foreground">Gestiona tu base de datos de clientes</p>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={handleCloseDialog}>
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
@@ -136,7 +201,9 @@ export default function Clients() {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Agregar Nuevo Cliente</DialogTitle>
+                <DialogTitle>
+                  {editingClient ? 'Editar Cliente' : 'Agregar Nuevo Cliente'}
+                </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
@@ -218,7 +285,9 @@ export default function Clients() {
                     placeholder="Dirección completa"
                   />
                 </div>
-                <Button type="submit" className="w-full">Agregar Cliente</Button>
+                <Button type="submit" className="w-full">
+                  {editingClient ? 'Actualizar Cliente' : 'Agregar Cliente'}
+                </Button>
               </form>
             </DialogContent>
           </Dialog>
@@ -245,28 +314,70 @@ export default function Clients() {
                   )}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
-                {client.email && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Mail className="h-4 w-4" />
-                    {client.email}
-                  </div>
-                )}
-                {client.phone && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Phone className="h-4 w-4" />
-                    {client.phone}
-                  </div>
-                )}
-                {client.vat_number && (
-                  <div className="text-sm">
-                    <span className="font-medium">RFC:</span> {client.vat_number}
-                  </div>
-                )}
+              <CardContent className="space-y-3">
+                <div className="space-y-2">
+                  {client.email && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Mail className="h-4 w-4" />
+                      {client.email}
+                    </div>
+                  )}
+                  {client.phone && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Phone className="h-4 w-4" />
+                      {client.phone}
+                    </div>
+                  )}
+                  {client.vat_number && (
+                    <div className="text-sm">
+                      <span className="font-medium">RFC:</span> {client.vat_number}
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2 pt-2 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEdit(client)}
+                    className="flex-1 gap-2"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Editar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDeleteClientId(client.id)}
+                    className="flex-1 gap-2 hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Eliminar
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
+
+        <AlertDialog open={!!deleteClientId} onOpenChange={() => setDeleteClientId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Eliminar cliente?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta acción no se puede deshacer. El cliente será eliminado permanentemente de la base de datos.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Eliminar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </Layout>
   );
