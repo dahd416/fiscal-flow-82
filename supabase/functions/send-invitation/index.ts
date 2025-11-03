@@ -48,15 +48,19 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Unauthorized");
     }
 
-    // Check if user is admin
+    // Check if user is admin or super_admin
     const { data: roleData, error: roleError } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
-      .eq("role", "admin")
       .single();
 
     if (roleError || !roleData) {
+      throw new Error("Unauthorized: Admin access required");
+    }
+
+    const userRole = roleData.role as string;
+    if (userRole !== "admin" && userRole !== "super_admin") {
       throw new Error("Unauthorized: Admin access required");
     }
 
