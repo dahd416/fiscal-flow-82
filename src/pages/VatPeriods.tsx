@@ -62,12 +62,14 @@ export default function VatPeriods() {
 
   useEffect(() => {
     if (user) {
+      // Siempre inicia con el calendario propio del usuario
+      setSelectedUserId(user.id);
+      setLoadingUsers(false);
+      loadEvents(user.id);
+      
+      // Si es admin, también carga la lista de usuarios para poder cambiar
       if (isAdmin) {
         loadUsers();
-      } else {
-        setLoadingUsers(false);
-        setSelectedUserId(user.id);
-        loadEvents(user.id);
       }
     }
   }, [user, isAdmin]);
@@ -85,9 +87,7 @@ export default function VatPeriods() {
       if (error) throw error;
       if (data?.users) {
         setUsers(data.users);
-        if (data.users.length > 0) {
-          setSelectedUserId(data.users[0].id);
-        }
+        // No cambia el selectedUserId aquí, ya está establecido en el useEffect
       }
     } catch (error: any) {
       console.error('Error loading users:', error);

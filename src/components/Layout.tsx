@@ -45,7 +45,7 @@ export function Layout({ children }: LayoutProps) {
     { name: 'Clientes', href: '/clients', icon: Users },
     { name: 'Transacciones', href: '/transactions', icon: Receipt },
     { name: 'Cotizaciones', href: '/quotations', icon: FileText },
-    { name: 'Períodos IVA', href: '/vat-periods', icon: Calendar },
+    { name: 'Calendarios', href: '/vat-periods', icon: Calendar },
   ];
 
   return (
