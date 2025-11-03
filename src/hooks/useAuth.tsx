@@ -43,10 +43,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      toast.success('Welcome back!');
+      toast.success('¡Bienvenido de nuevo!');
       navigate('/dashboard');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to sign in');
+      toast.error(error.message || 'Error al iniciar sesión');
       throw error;
     }
   };
@@ -62,9 +62,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       });
       if (error) throw error;
-      toast.success('Account created! Please check your email to verify.');
+      toast.success('¡Cuenta creada! Por favor revisa tu correo para verificar.');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to sign up');
+      toast.error(error.message || 'Error al registrarse');
       throw error;
     }
   };
@@ -73,10 +73,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      toast.success('Signed out successfully');
+      toast.success('Sesión cerrada exitosamente');
       navigate('/auth');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to sign out');
+      toast.error(error.message || 'Error al cerrar sesión');
     }
   };
 

@@ -37,20 +37,20 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Financial Control</CardTitle>
-          <CardDescription>Manage your income, clients, and VAT reporting</CardDescription>
+          <CardTitle>Control Financiero</CardTitle>
+          <CardDescription>Gestiona tus ingresos, clientes y declaraciones de IVA</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="signin">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              <TabsTrigger value="signin">Iniciar Sesión</TabsTrigger>
+              <TabsTrigger value="signup">Registrarse</TabsTrigger>
             </TabsList>
             
             <TabsContent value="signin">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
+                  <Label htmlFor="signin-email">Correo Electrónico</Label>
                   <Input
                     id="signin-email"
                     type="email"
@@ -60,7 +60,7 @@ export default function Auth() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
+                  <Label htmlFor="signin-password">Contraseña</Label>
                   <Input
                     id="signin-password"
                     type="password"
@@ -70,7 +70,7 @@ export default function Auth() {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Signing in...' : 'Sign In'}
+                  {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
                 </Button>
               </form>
             </TabsContent>
@@ -78,7 +78,7 @@ export default function Auth() {
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-name">Full Name</Label>
+                  <Label htmlFor="signup-name">Nombre Completo</Label>
                   <Input
                     id="signup-name"
                     type="text"
@@ -88,7 +88,7 @@ export default function Auth() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
+                  <Label htmlFor="signup-email">Correo Electrónico</Label>
                   <Input
                     id="signup-email"
                     type="email"
@@ -98,7 +98,7 @@ export default function Auth() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
+                  <Label htmlFor="signup-password">Contraseña</Label>
                   <Input
                     id="signup-password"
                     type="password"
@@ -109,7 +109,7 @@ export default function Auth() {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Creating account...' : 'Sign Up'}
+                  {loading ? 'Creando cuenta...' : 'Registrarse'}
                 </Button>
               </form>
             </TabsContent>

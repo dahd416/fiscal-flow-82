@@ -71,9 +71,9 @@ export default function VatPeriods() {
     ]);
 
     if (error) {
-      toast.error('Failed to create VAT period');
+      toast.error('Error al crear período de IVA');
     } else {
-      toast.success('VAT period created successfully');
+      toast.success('Período de IVA creado exitosamente');
       setOpen(false);
       setFormData({ period_start: '', period_end: '', payment_due_date: '', status: 'pending' });
       fetchPeriods();
@@ -87,9 +87,9 @@ export default function VatPeriods() {
       .eq('id', id);
 
     if (error) {
-      toast.error('Failed to update status');
+      toast.error('Error al actualizar estado');
     } else {
-      toast.success('Status updated');
+      toast.success('Estado actualizado');
       fetchPeriods();
     }
   };
@@ -107,23 +107,23 @@ export default function VatPeriods() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">VAT Periods</h2>
-            <p className="text-muted-foreground">Manage VAT reporting periods and payments</p>
+            <h2 className="text-3xl font-bold tracking-tight">Períodos de IVA</h2>
+            <p className="text-muted-foreground">Gestiona períodos de declaración y pagos de IVA</p>
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
-                Create Period
+                Crear Período
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Create VAT Period</DialogTitle>
+                <DialogTitle>Crear Período de IVA</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="period_start">Period Start *</Label>
+                  <Label htmlFor="period_start">Inicio del Período *</Label>
                   <Input
                     id="period_start"
                     type="date"
@@ -133,7 +133,7 @@ export default function VatPeriods() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="period_end">Period End *</Label>
+                  <Label htmlFor="period_end">Fin del Período *</Label>
                   <Input
                     id="period_end"
                     type="date"
@@ -143,7 +143,7 @@ export default function VatPeriods() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="payment_due_date">Payment Due Date</Label>
+                  <Label htmlFor="payment_due_date">Fecha de Vencimiento de Pago</Label>
                   <Input
                     id="payment_due_date"
                     type="date"
@@ -152,19 +152,19 @@ export default function VatPeriods() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Status</Label>
+                  <Label>Estado</Label>
                   <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="paid">Paid</SelectItem>
-                      <SelectItem value="overdue">Overdue</SelectItem>
+                      <SelectItem value="pending">Pendiente</SelectItem>
+                      <SelectItem value="paid">Pagado</SelectItem>
+                      <SelectItem value="overdue">Vencido</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <Button type="submit" className="w-full">Create Period</Button>
+                <Button type="submit" className="w-full">Crear Período</Button>
               </form>
             </DialogContent>
           </Dialog>
@@ -177,28 +177,28 @@ export default function VatPeriods() {
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-5 w-5" />
-                    Period
+                    Período
                   </div>
                   <Badge className={getStatusColor(period.status)}>
-                    {period.status}
+                    {period.status === 'pending' ? 'Pendiente' : period.status === 'paid' ? 'Pagado' : 'Vencido'}
                   </Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="text-sm">
-                  <span className="font-medium">Period:</span>{' '}
+                  <span className="font-medium">Período:</span>{' '}
                   {new Date(period.period_start).toLocaleDateString()} -{' '}
                   {new Date(period.period_end).toLocaleDateString()}
                 </div>
                 <div className="text-sm">
-                  <span className="font-medium">Total Income:</span> €{period.total_income.toFixed(2)}
+                  <span className="font-medium">Ingresos Totales:</span> €{period.total_income.toFixed(2)}
                 </div>
                 <div className="text-sm">
-                  <span className="font-medium">Total VAT:</span> €{period.total_vat.toFixed(2)}
+                  <span className="font-medium">IVA Total:</span> €{period.total_vat.toFixed(2)}
                 </div>
                 {period.payment_due_date && (
                   <div className="text-sm">
-                    <span className="font-medium">Due:</span>{' '}
+                    <span className="font-medium">Vencimiento:</span>{' '}
                     {new Date(period.payment_due_date).toLocaleDateString()}
                   </div>
                 )}
@@ -209,7 +209,7 @@ export default function VatPeriods() {
                     onClick={() => updateStatus(period.id, 'paid')}
                     disabled={period.status === 'paid'}
                   >
-                    Mark Paid
+                    Marcar como Pagado
                   </Button>
                 </div>
               </CardContent>

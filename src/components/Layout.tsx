@@ -13,10 +13,10 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Clients', href: '/clients', icon: Users },
-    { name: 'Transactions', href: '/transactions', icon: Receipt },
-    { name: 'VAT Periods', href: '/vat-periods', icon: Calendar },
+    { name: 'Panel', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Clientes', href: '/clients', icon: Users },
+    { name: 'Transacciones', href: '/transactions', icon: Receipt },
+    { name: 'Períodos IVA', href: '/vat-periods', icon: Calendar },
   ];
 
   return (
@@ -25,7 +25,7 @@ export function Layout({ children }: LayoutProps) {
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-8">
-              <h1 className="text-xl font-bold">Financial Control</h1>
+              <h1 className="text-xl font-bold">Control Financiero</h1>
               <div className="hidden md:flex gap-1">
                 {navigation.map((item) => {
                   const Icon = item.icon;
@@ -50,7 +50,7 @@ export function Layout({ children }: LayoutProps) {
               </span>
               <Button variant="outline" onClick={signOut} className="gap-2">
                 <LogOut className="h-4 w-4" />
-                Sign Out
+                Cerrar Sesión
               </Button>
             </div>
           </div>

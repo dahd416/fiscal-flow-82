@@ -47,28 +47,28 @@ export default function Dashboard() {
 
   const statCards = [
     {
-      title: 'Total Income',
+      title: 'Ingresos Totales',
       value: `€${stats.totalIncome.toFixed(2)}`,
       icon: DollarSign,
-      description: 'Total revenue generated',
+      description: 'Ingresos totales generados',
     },
     {
-      title: 'Total Expenses',
+      title: 'Gastos Totales',
       value: `€${stats.totalExpenses.toFixed(2)}`,
       icon: Receipt,
-      description: 'Total expenses recorded',
+      description: 'Gastos totales registrados',
     },
     {
-      title: 'Total VAT',
+      title: 'IVA Total',
       value: `€${stats.totalVAT.toFixed(2)}`,
       icon: TrendingUp,
-      description: 'VAT collected',
+      description: 'IVA recaudado',
     },
     {
-      title: 'Clients',
+      title: 'Clientes',
       value: stats.clientCount,
       icon: Users,
-      description: `${stats.transactionCount} transactions`,
+      description: `${stats.transactionCount} transacciones`,
     },
   ];
 
@@ -76,9 +76,9 @@ export default function Dashboard() {
     <Layout>
       <div className="space-y-8">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Panel de Control</h2>
           <p className="text-muted-foreground">
-            Overview of your financial metrics
+            Resumen de tus métricas financieras
           </p>
         </div>
 

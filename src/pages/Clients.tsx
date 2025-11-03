@@ -50,9 +50,9 @@ export default function Clients() {
     ]);
 
     if (error) {
-      toast.error('Failed to add client');
+      toast.error('Error al agregar cliente');
     } else {
-      toast.success('Client added successfully');
+      toast.success('Cliente agregado exitosamente');
       setOpen(false);
       setFormData({ name: '', email: '', phone: '', vat_number: '', address: '' });
       fetchClients();
@@ -64,23 +64,23 @@ export default function Clients() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Clients</h2>
-            <p className="text-muted-foreground">Manage your client database</p>
+            <h2 className="text-3xl font-bold tracking-tight">Clientes</h2>
+            <p className="text-muted-foreground">Gestiona tu base de datos de clientes</p>
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
-                Add Client
+                Agregar Cliente
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add New Client</DialogTitle>
+                <DialogTitle>Agregar Nuevo Cliente</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Name *</Label>
+                  <Label htmlFor="name">Nombre *</Label>
                   <Input
                     id="name"
                     value={formData.name}
@@ -89,7 +89,7 @@ export default function Clients() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Correo Electrónico</Label>
                   <Input
                     id="email"
                     type="email"
@@ -98,7 +98,7 @@ export default function Clients() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="phone">Teléfono</Label>
                   <Input
                     id="phone"
                     value={formData.phone}
@@ -106,7 +106,7 @@ export default function Clients() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="vat_number">VAT Number</Label>
+                  <Label htmlFor="vat_number">NIF/CIF</Label>
                   <Input
                     id="vat_number"
                     value={formData.vat_number}
@@ -114,14 +114,14 @@ export default function Clients() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
+                  <Label htmlFor="address">Dirección</Label>
                   <Input
                     id="address"
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   />
                 </div>
-                <Button type="submit" className="w-full">Add Client</Button>
+                <Button type="submit" className="w-full">Agregar Cliente</Button>
               </form>
             </DialogContent>
           </Dialog>
@@ -151,7 +151,7 @@ export default function Clients() {
                 )}
                 {client.vat_number && (
                   <div className="text-sm">
-                    <span className="font-medium">VAT:</span> {client.vat_number}
+                    <span className="font-medium">NIF/CIF:</span> {client.vat_number}
                   </div>
                 )}
               </CardContent>

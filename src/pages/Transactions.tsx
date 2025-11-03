@@ -73,9 +73,9 @@ export default function Transactions() {
     ]);
 
     if (error) {
-      toast.error('Failed to add transaction');
+      toast.error('Error al agregar transacción');
     } else {
-      toast.success('Transaction added successfully');
+      toast.success('Transacción agregada exitosamente');
       setOpen(false);
       setFormData({
         type: 'income',
@@ -95,35 +95,35 @@ export default function Transactions() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Transactions</h2>
-            <p className="text-muted-foreground">Track all your income and expenses</p>
+            <h2 className="text-3xl font-bold tracking-tight">Transacciones</h2>
+            <p className="text-muted-foreground">Rastrea todos tus ingresos y gastos</p>
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
-                Add Transaction
+                Agregar Transacción
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add New Transaction</DialogTitle>
+                <DialogTitle>Agregar Nueva Transacción</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Type</Label>
+                  <Label>Tipo</Label>
                   <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="income">Income</SelectItem>
-                      <SelectItem value="expense">Expense</SelectItem>
+                      <SelectItem value="income">Ingreso</SelectItem>
+                      <SelectItem value="expense">Gasto</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="amount">Amount (€) *</Label>
+                  <Label htmlFor="amount">Monto (€) *</Label>
                   <Input
                     id="amount"
                     type="number"
@@ -134,7 +134,7 @@ export default function Transactions() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="vat_rate">VAT Rate (%)</Label>
+                  <Label htmlFor="vat_rate">Tasa de IVA (%)</Label>
                   <Input
                     id="vat_rate"
                     type="number"
@@ -144,10 +144,10 @@ export default function Transactions() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Client</Label>
+                  <Label>Cliente</Label>
                   <Select value={formData.client_id} onValueChange={(v) => setFormData({ ...formData, client_id: v })}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select client (optional)" />
+                      <SelectValue placeholder="Seleccionar cliente (opcional)" />
                     </SelectTrigger>
                     <SelectContent>
                       {clients.map((client) => (
@@ -159,7 +159,7 @@ export default function Transactions() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">Descripción</Label>
                   <Input
                     id="description"
                     value={formData.description}
@@ -167,7 +167,7 @@ export default function Transactions() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
+                  <Label htmlFor="category">Categoría</Label>
                   <Input
                     id="category"
                     value={formData.category}
@@ -175,7 +175,7 @@ export default function Transactions() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="date">Date *</Label>
+                  <Label htmlFor="date">Fecha *</Label>
                   <Input
                     id="date"
                     type="date"
@@ -184,7 +184,7 @@ export default function Transactions() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full">Add Transaction</Button>
+                <Button type="submit" className="w-full">Agregar Transacción</Button>
               </form>
             </DialogContent>
           </Dialog>
@@ -194,13 +194,13 @@ export default function Transactions() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Client</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="text-right">VAT</TableHead>
+                <TableHead>Fecha</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Descripción</TableHead>
+                <TableHead>Categoría</TableHead>
+                <TableHead className="text-right">Monto</TableHead>
+                <TableHead className="text-right">IVA</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
