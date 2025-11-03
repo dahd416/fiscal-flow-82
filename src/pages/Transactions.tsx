@@ -7,14 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, TrendingUp, TrendingDown } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/currency';
-import { ProviderManager } from '@/components/transactions/ProviderManager';
-import { ConceptManager } from '@/components/transactions/ConceptManager';
 
 interface Transaction {
   id: string;
@@ -46,7 +43,22 @@ export default function Transactions() {
   const [concepts, setConcepts] = useState<string[]>([]);
   const [filteredConcepts, setFilteredConcepts] = useState<string[]>([]);
   const [showConceptSuggestions, setShowConceptSuggestions] = useState(false);
+  const [filteredProviders, setFilteredProviders] = useState<any[]>([]);
+  const [showProviderSuggestions, setShowProviderSuggestions] = useState(false);
+  const [providerSearchText, setProviderSearchText] = useState('');
   const [open, setOpen] = useState(false);
+  const [editingProvider, setEditingProvider] = useState<any>(null);
+  const [editingConcept, setEditingConcept] = useState<string | null>(null);
+  const [editProviderDialog, setEditProviderDialog] = useState(false);
+  const [editConceptDialog, setEditConceptDialog] = useState(false);
+  const [editProviderForm, setEditProviderForm] = useState({
+    name: '',
+    vat_number: '',
+    phone: '',
+    email: '',
+    address: '',
+  });
+  const [editConceptText, setEditConceptText] = useState('');
   const [formData, setFormData] = useState({
     type: 'income',
     amount: '',
@@ -105,6 +117,27 @@ export default function Transactions() {
     }
   };
 
+  const handleProviderSearchChange = (value: string) => {
+    setProviderSearchText(value);
+    if (value.trim()) {
+      const filtered = providers.filter(p => 
+        p.name.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredProviders(filtered);
+      setShowProviderSuggestions(true);
+    } else {
+      setFilteredProviders(providers);
+      setShowProviderSuggestions(false);
+      setFormData({ ...formData, provider_id: '' });
+    }
+  };
+
+  const selectProvider = (provider: any) => {
+    setProviderSearchText(provider.name);
+    setFormData({ ...formData, provider_id: provider.id });
+    setShowProviderSuggestions(false);
+  };
+
   const handleConceptChange = (value: string) => {
     setFormData({ ...formData, concept: value });
     if (value.trim()) {
@@ -121,6 +154,111 @@ export default function Transactions() {
   const selectConcept = (concept: string) => {
     setFormData({ ...formData, concept });
     setShowConceptSuggestions(false);
+  };
+
+  const handleDeleteProvider = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    const { error } = await supabase.from('providers').delete().eq('id', id);
+    if (error) {
+      toast.error('Error al eliminar proveedor');
+    } else {
+      toast.success('Proveedor eliminado');
+      fetchData();
+      setProviderSearchText('');
+      setFormData({ ...formData, provider_id: '' });
+    }
+  };
+
+  const handleEditProvider = async (e: React.MouseEvent, provider: any) => {
+    e.stopPropagation();
+    setEditingProvider(provider);
+    setEditProviderForm({
+      name: provider.name,
+      vat_number: provider.vat_number || '',
+      phone: provider.phone || '',
+      email: provider.email || '',
+      address: provider.address || '',
+    });
+    setEditProviderDialog(true);
+    setShowProviderSuggestions(false);
+  };
+
+  const handleSaveProvider = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingProvider) {
+      const { error } = await supabase
+        .from('providers')
+        .update(editProviderForm)
+        .eq('id', editingProvider.id);
+      
+      if (error) {
+        toast.error('Error al actualizar proveedor');
+      } else {
+        toast.success('Proveedor actualizado');
+        setEditProviderDialog(false);
+        setEditingProvider(null);
+        fetchData();
+      }
+    }
+  };
+
+  const handleDeleteConcept = async (e: React.MouseEvent, concept: string) => {
+    e.stopPropagation();
+    const { data } = await supabase
+      .from('transaction_concepts')
+      .select('id')
+      .eq('user_id', user!.id)
+      .eq('concept', concept)
+      .single();
+    
+    if (data) {
+      const { error } = await supabase.from('transaction_concepts').delete().eq('id', data.id);
+      if (error) {
+        toast.error('Error al eliminar concepto');
+      } else {
+        toast.success('Concepto eliminado');
+        fetchData();
+        if (formData.concept === concept) {
+          setFormData({ ...formData, concept: '' });
+        }
+      }
+    }
+  };
+
+  const handleEditConcept = async (e: React.MouseEvent, concept: string) => {
+    e.stopPropagation();
+    setEditingConcept(concept);
+    setEditConceptText(concept);
+    setEditConceptDialog(true);
+    setShowConceptSuggestions(false);
+  };
+
+  const handleSaveConcept = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingConcept || !editConceptText.trim()) return;
+
+    const { data } = await supabase
+      .from('transaction_concepts')
+      .select('id')
+      .eq('user_id', user!.id)
+      .eq('concept', editingConcept)
+      .single();
+
+    if (data) {
+      const { error } = await supabase
+        .from('transaction_concepts')
+        .update({ concept: editConceptText.trim() })
+        .eq('id', data.id);
+
+      if (error) {
+        toast.error('Error al actualizar concepto');
+      } else {
+        toast.success('Concepto actualizado');
+        setEditConceptDialog(false);
+        setEditingConcept(null);
+        fetchData();
+      }
+    }
   };
 
   const saveOrUpdateConcept = async (concept: string) => {
@@ -371,32 +509,58 @@ export default function Transactions() {
                     </Select>
                   </div>
                 ) : (
-                  <>
-                    <div className="space-y-2">
-                      <Label>Proveedor</Label>
-                      <Select value={formData.provider_id} onValueChange={(v) => setFormData({ ...formData, provider_id: v })}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar proveedor (opcional)" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {providers.map((provider) => (
-                            <SelectItem key={provider.id} value={provider.id}>
-                              {provider.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <Separator />
-
-                    <ProviderManager providers={providers} onUpdate={fetchData} />
-                  </>
+                  <div className="space-y-2 relative">
+                    <Label htmlFor="provider">Proveedor</Label>
+                    <Input
+                      id="provider"
+                      value={providerSearchText}
+                      onChange={(e) => handleProviderSearchChange(e.target.value)}
+                      onFocus={() => {
+                        if (providers.length > 0) {
+                          setFilteredProviders(providers);
+                          setShowProviderSuggestions(true);
+                        }
+                      }}
+                      onBlur={() => {
+                        setTimeout(() => setShowProviderSuggestions(false), 200);
+                      }}
+                      placeholder="Buscar o crear proveedor"
+                    />
+                    {showProviderSuggestions && filteredProviders.length > 0 && (
+                      <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-auto">
+                        {filteredProviders.map((provider) => (
+                          <div
+                            key={provider.id}
+                            className="px-3 py-2 hover:bg-accent cursor-pointer text-sm flex items-center justify-between group"
+                            onClick={() => selectProvider(provider)}
+                          >
+                            <span className="flex-1">{provider.name}</span>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={(e) => handleEditProvider(e, provider)}
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                onClick={(e) => handleDeleteProvider(e, provider.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
-
-                <Separator />
-
-                <ConceptManager concepts={concepts} onUpdate={fetchData} />
 
                 <div className="space-y-2 relative">
                   <Label htmlFor="concept">Concepto</Label>
@@ -405,7 +569,8 @@ export default function Transactions() {
                     value={formData.concept}
                     onChange={(e) => handleConceptChange(e.target.value)}
                     onFocus={() => {
-                      if (filteredConcepts.length > 0) {
+                      if (concepts.length > 0) {
+                        setFilteredConcepts(concepts);
                         setShowConceptSuggestions(true);
                       }
                     }}
@@ -415,14 +580,34 @@ export default function Transactions() {
                     placeholder="Escribe un concepto"
                   />
                   {showConceptSuggestions && filteredConcepts.length > 0 && (
-                    <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-auto">
+                    <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-auto">
                       {filteredConcepts.map((concept, index) => (
                         <div
                           key={index}
-                          className="px-3 py-2 hover:bg-accent cursor-pointer text-sm"
+                          className="px-3 py-2 hover:bg-accent cursor-pointer text-sm flex items-center justify-between group"
                           onClick={() => selectConcept(concept)}
                         >
-                          {concept}
+                          <span className="flex-1">{concept}</span>
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={(e) => handleEditConcept(e, concept)}
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                              onClick={(e) => handleDeleteConcept(e, concept)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -455,6 +640,81 @@ export default function Transactions() {
             </DialogContent>
           </Dialog>
         </div>
+
+        {/* Edit Provider Dialog */}
+        <Dialog open={editProviderDialog} onOpenChange={setEditProviderDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Editar Proveedor</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSaveProvider} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-provider-name">Nombre *</Label>
+                <Input
+                  id="edit-provider-name"
+                  value={editProviderForm.name}
+                  onChange={(e) => setEditProviderForm({ ...editProviderForm, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-provider-vat">RFC</Label>
+                <Input
+                  id="edit-provider-vat"
+                  value={editProviderForm.vat_number}
+                  onChange={(e) => setEditProviderForm({ ...editProviderForm, vat_number: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-provider-phone">Teléfono</Label>
+                <Input
+                  id="edit-provider-phone"
+                  value={editProviderForm.phone}
+                  onChange={(e) => setEditProviderForm({ ...editProviderForm, phone: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-provider-email">Email</Label>
+                <Input
+                  id="edit-provider-email"
+                  type="email"
+                  value={editProviderForm.email}
+                  onChange={(e) => setEditProviderForm({ ...editProviderForm, email: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-provider-address">Dirección</Label>
+                <Input
+                  id="edit-provider-address"
+                  value={editProviderForm.address}
+                  onChange={(e) => setEditProviderForm({ ...editProviderForm, address: e.target.value })}
+                />
+              </div>
+              <Button type="submit" className="w-full">Actualizar Proveedor</Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Concept Dialog */}
+        <Dialog open={editConceptDialog} onOpenChange={setEditConceptDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Editar Concepto</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSaveConcept} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-concept-text">Concepto *</Label>
+                <Input
+                  id="edit-concept-text"
+                  value={editConceptText}
+                  onChange={(e) => setEditConceptText(e.target.value)}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full">Actualizar Concepto</Button>
+            </form>
+          </DialogContent>
+        </Dialog>
 
         <div className="rounded-md border">
           <Table>
