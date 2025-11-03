@@ -209,19 +209,19 @@ export default function Clients() {
               </TabsList>
             </Tabs>
             <Dialog open={open} onOpenChange={handleCloseDialog}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Agregar Cliente
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>
-                  {editingClient ? 'Editar Cliente' : 'Agregar Nuevo Cliente'}
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Agregar Cliente
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingClient ? 'Editar Cliente' : 'Agregar Nuevo Cliente'}
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="first_name">Nombre *</Label>
                   <Input
@@ -301,12 +301,12 @@ export default function Clients() {
                     placeholder="Dirección completa"
                   />
                 </div>
-                <Button type="submit" className="w-full">
-                  {editingClient ? 'Actualizar Cliente' : 'Agregar Cliente'}
-                </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  <Button type="submit" className="w-full">
+                    {editingClient ? 'Actualizar Cliente' : 'Agregar Cliente'}
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
