@@ -14,7 +14,8 @@ export default function Auth() {
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -35,7 +36,7 @@ export default function Auth() {
     e.preventDefault();
     setLoading(true);
     try {
-      await signUp(email, password, fullName);
+      await signUp(email, password, firstName, lastName);
     } finally {
       setLoading(false);
     }
@@ -207,13 +208,25 @@ export default function Auth() {
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-name">Nombre Completo</Label>
+                  <Label htmlFor="signup-firstname">Nombre</Label>
                   <Input
-                    id="signup-name"
+                    id="signup-firstname"
                     type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
                     required
+                    placeholder="Ej: Juan"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-lastname">Apellido</Label>
+                  <Input
+                    id="signup-lastname"
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                    placeholder="Ej: Pérez"
                   />
                 </div>
                 <div className="space-y-2">
