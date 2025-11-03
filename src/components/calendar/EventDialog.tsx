@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -53,7 +53,7 @@ export function EventDialog({
     if (event) {
       setTitle(event.title);
       setDescription(event.description || '');
-      setEventDate(new Date(event.event_date));
+      setEventDate(parseISO(event.event_date));
       setEventTime(event.event_time || '');
       setEventType(event.event_type);
       setPriority(event.priority);

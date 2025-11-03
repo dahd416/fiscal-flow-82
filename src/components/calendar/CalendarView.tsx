@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
@@ -33,7 +33,7 @@ export function CalendarView({ events, onDateSelect, selectedDate }: CalendarVie
 
   const getEventsForDate = (date: Date) => {
     return events.filter((event) =>
-      isSameDay(new Date(event.event_date), date)
+      isSameDay(parseISO(event.event_date), date)
     );
   };
 
