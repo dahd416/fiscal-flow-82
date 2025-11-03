@@ -125,12 +125,11 @@ export function QuotationDialog({
 
           <div className="space-y-2">
             <Label htmlFor="client">Cliente</Label>
-            <Select value={clientId} onValueChange={setClientId}>
+            <Select value={clientId || undefined} onValueChange={(value) => setClientId(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar cliente (opcional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sin cliente</SelectItem>
                 {clients.map((client) => (
                   <SelectItem key={client.id} value={client.id}>
                     {client.name}
