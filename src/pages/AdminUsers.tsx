@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { EditUserDialog } from '@/components/admin/EditUserDialog';
 import { UserActivityPanel } from '@/components/admin/UserActivityPanel';
 import { PlatformCustomization } from '@/components/admin/PlatformCustomization';
+import { GlobalActivityPanel } from '@/components/admin/GlobalActivityPanel';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -334,7 +335,7 @@ export default function AdminUsers() {
                 <Users className="h-4 w-4" />
                 Lista de Usuarios
               </TabsTrigger>
-              <TabsTrigger value="activity" className="gap-2" disabled={!selectedUser}>
+              <TabsTrigger value="activity" className="gap-2">
                 <Activity className="h-4 w-4" />
                 Actividad Financiera
               </TabsTrigger>
@@ -612,23 +613,7 @@ export default function AdminUsers() {
             </TabsContent>
 
             <TabsContent value="activity">
-              {selectedUser ? (
-                <UserActivityPanel 
-                  userId={selectedUser.id} 
-                  userName={getUserFullName(selectedUser)}
-                />
-              ) : (
-                <Card>
-                  <CardContent className="py-12">
-                    <div className="text-center">
-                      <Activity className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                      <p className="text-muted-foreground">
-                        Selecciona un usuario para ver su actividad financiera
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+              <GlobalActivityPanel />
             </TabsContent>
 
             <TabsContent value="customization">

@@ -1,0 +1,495 @@
+import { useEffect, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { supabase } from '@/integrations/supabase/client';
+import { formatCurrency } from '@/lib/currency';
+import { TrendingUp, TrendingDown, ArrowUpDown, Users, DollarSign, Activity, User, FileText } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+interface Transaction {
+  id: string;
+  type: 'income' | 'expense';
+  amount: number;
+  vat_amount: number;
+  description: string | null;
+  category: string | null;
+  transaction_date: string;
+  user_id: string;
+  profiles: {
+    first_name: string | null;
+    last_name: string | null;
+  } | null;
+  quotations: { quotation_number: string; title: string } | null;
+}
+
+interface UserStats {
+  user_id: string;
+  userName: string;
+  totalIncome: number;
+  totalExpense: number;
+  balance: number;
+  transactionCount: number;
+}
+
+export function GlobalActivityPanel() {
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
+  const [userFilter, setUserFilter] = useState<string>('all');
+  const [globalStats, setGlobalStats] = useState({
+    totalIncome: 0,
+    totalExpense: 0,
+    balance: 0,
+    totalUsers: 0,
+    totalTransactions: 0,
+  });
+  const [userStats, setUserStats] = useState<UserStats[]>([]);
+  const [uniqueUsers, setUniqueUsers] = useState<Array<{ id: string; name: string }>>([]);
+
+  useEffect(() => {
+    loadAllActivity();
+  }, []);
+
+  useEffect(() => {
+    calculateStats();
+  }, [transactions, typeFilter, userFilter]);
+
+  const loadAllActivity = async () => {
+    try {
+      setLoading(true);
+      
+      // First, get all transactions
+      const { data: transactionsData, error: transError } = await supabase
+        .from('transactions')
+        .select(`
+          *,
+          quotations(quotation_number, title)
+        `)
+        .in('type', ['income', 'expense'])
+        .order('transaction_date', { ascending: false })
+        .limit(500);
+
+      if (transError) throw transError;
+
+      // Then get all profiles
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name');
+
+      if (profilesError) throw profilesError;
+
+      // Map profiles to transactions
+      const profilesMap = new Map(
+        profilesData?.map(p => [p.id, p]) || []
+      );
+
+      const enrichedTransactions: Transaction[] = (transactionsData || []).map(t => ({
+        ...t,
+        profiles: profilesMap.get(t.user_id) || null,
+      })) as Transaction[];
+
+      setTransactions(enrichedTransactions);
+
+      // Extract unique users
+      const usersMap = new Map<string, string>();
+      enrichedTransactions.forEach(t => {
+        if (t.profiles) {
+          const name = [t.profiles.first_name, t.profiles.last_name].filter(Boolean).join(' ') || 'Sin nombre';
+          usersMap.set(t.user_id, name);
+        }
+      });
+      
+      const users = Array.from(usersMap.entries()).map(([id, name]) => ({ id, name }));
+      setUniqueUsers(users);
+    } catch (error) {
+      console.error('Error loading activity:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateStats = () => {
+    let filtered = transactions;
+
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter(t => t.type === typeFilter);
+    }
+
+    if (userFilter !== 'all') {
+      filtered = filtered.filter(t => t.user_id === userFilter);
+    }
+
+    const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+    const expense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+
+    setGlobalStats({
+      totalIncome: income,
+      totalExpense: expense,
+      balance: income - expense,
+      totalUsers: uniqueUsers.length,
+      totalTransactions: filtered.length,
+    });
+
+    // Calculate per-user stats
+    const userStatsMap = new Map<string, UserStats>();
+    
+    transactions.forEach(t => {
+      const userName = t.profiles 
+        ? [t.profiles.first_name, t.profiles.last_name].filter(Boolean).join(' ') || 'Sin nombre'
+        : 'Sin nombre';
+      
+      const current = userStatsMap.get(t.user_id) || {
+        user_id: t.user_id,
+        userName,
+        totalIncome: 0,
+        totalExpense: 0,
+        balance: 0,
+        transactionCount: 0,
+      };
+
+      if (t.type === 'income') {
+        current.totalIncome += t.amount;
+      } else {
+        current.totalExpense += t.amount;
+      }
+      
+      current.balance = current.totalIncome - current.totalExpense;
+      current.transactionCount += 1;
+      
+      userStatsMap.set(t.user_id, current);
+    });
+
+    const stats = Array.from(userStatsMap.values()).sort((a, b) => b.balance - a.balance);
+    setUserStats(stats);
+  };
+
+  const filteredTransactions = transactions.filter(t => {
+    if (typeFilter !== 'all' && t.type !== typeFilter) return false;
+    if (userFilter !== 'all' && t.user_id !== userFilter) return false;
+    return true;
+  });
+
+  const clearFilters = () => {
+    setTypeFilter('all');
+    setUserFilter('all');
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Global Stats */}
+      <div className="grid gap-4 md:grid-cols-5">
+        <Card className="border-green-200 bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/20 dark:to-green-900/10">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-green-600" />
+              Ingresos Totales
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-700 dark:text-green-400">
+              {formatCurrency(globalStats.totalIncome)}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-red-200 bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/20 dark:to-red-900/10">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+              <TrendingDown className="h-4 w-4 text-red-600" />
+              Egresos Totales
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-700 dark:text-red-400">
+              {formatCurrency(globalStats.totalExpense)}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className={`border-2 ${
+          globalStats.balance >= 0 
+            ? 'border-green-300 bg-gradient-to-br from-green-50 to-green-100/50 dark:from-green-950/20 dark:to-green-900/10' 
+            : 'border-red-300 bg-gradient-to-br from-red-50 to-red-100/50 dark:from-red-950/20 dark:to-red-900/10'
+        }`}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Balance Global
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${
+              globalStats.balance >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
+            }`}>
+              {formatCurrency(globalStats.balance)}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/10">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+              <Users className="h-4 w-4 text-blue-600" />
+              Usuarios Activos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-700 dark:text-blue-400">
+              {globalStats.totalUsers}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/20 dark:to-purple-900/10">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+              <Activity className="h-4 w-4 text-purple-600" />
+              Transacciones
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-700 dark:text-purple-400">
+              {globalStats.totalTransactions}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Filtros</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row gap-4 items-end">
+            <div className="flex-1 space-y-2">
+              <label className="text-sm font-medium">Tipo</label>
+              <Select value={typeFilter} onValueChange={(v: any) => setTypeFilter(v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="income">Solo Ingresos</SelectItem>
+                  <SelectItem value="expense">Solo Egresos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1 space-y-2">
+              <label className="text-sm font-medium">Usuario</label>
+              <Select value={userFilter} onValueChange={setUserFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los usuarios</SelectItem>
+                  {uniqueUsers.map(user => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {(typeFilter !== 'all' || userFilter !== 'all') && (
+              <button
+                onClick={clearFilters}
+                className="px-4 py-2 text-sm border rounded-md hover:bg-muted"
+              >
+                Limpiar
+              </button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tabs */}
+      <Tabs defaultValue="transactions" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="transactions" className="gap-2">
+            <FileText className="h-4 w-4" />
+            Transacciones
+          </TabsTrigger>
+          <TabsTrigger value="users" className="gap-2">
+            <User className="h-4 w-4" />
+            Por Usuario
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Transactions Tab */}
+        <TabsContent value="transactions">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Historial de Transacciones</span>
+                <Badge variant="secondary">{filteredTransactions.length}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {filteredTransactions.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No hay transacciones para mostrar</p>
+                </div>
+              ) : (
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[120px]">Fecha</TableHead>
+                          <TableHead className="w-[180px]">Usuario</TableHead>
+                          <TableHead className="w-[100px]">Tipo</TableHead>
+                          <TableHead>Descripción</TableHead>
+                          <TableHead className="w-[140px]">Categoría</TableHead>
+                          <TableHead className="text-right w-[120px]">Monto</TableHead>
+                          <TableHead className="text-right w-[100px]">IVA</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredTransactions.map((transaction) => {
+                          const userName = transaction.profiles
+                            ? [transaction.profiles.first_name, transaction.profiles.last_name].filter(Boolean).join(' ') || 'Sin nombre'
+                            : 'Sin nombre';
+
+                          return (
+                            <TableRow key={transaction.id} className="hover:bg-muted/50">
+                              <TableCell className="font-medium whitespace-nowrap">
+                                {new Date(transaction.transaction_date).toLocaleDateString('es-MX', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric'
+                                })}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <User className="h-4 w-4 text-muted-foreground" />
+                                  <span className="font-medium">{userName}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {transaction.type === 'income' ? (
+                                  <Badge className="gap-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 whitespace-nowrap">
+                                    <TrendingUp className="h-3 w-3" />
+                                    Ingreso
+                                  </Badge>
+                                ) : (
+                                  <Badge className="gap-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 whitespace-nowrap">
+                                    <TrendingDown className="h-3 w-3" />
+                                    Egreso
+                                  </Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="max-w-[200px]">
+                                <div className="truncate" title={transaction.description || ''}>
+                                  {transaction.description || (
+                                    <span className="text-muted-foreground italic">Sin descripción</span>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {transaction.category ? (
+                                  <Badge variant="outline" className="whitespace-nowrap">{transaction.category}</Badge>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right font-bold whitespace-nowrap">
+                                <span className={transaction.type === 'income' ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}>
+                                  {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-right text-muted-foreground whitespace-nowrap">
+                                {formatCurrency(transaction.vat_amount)}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Users Tab */}
+        <TabsContent value="users">
+          <Card>
+            <CardHeader>
+              <CardTitle>Resumen por Usuario</CardTitle>
+              <CardDescription>Balance y actividad de cada usuario</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {userStats.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No hay datos de usuarios</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {userStats.map((stat, idx) => (
+                    <Card key={stat.user_id} className={idx === 0 ? 'border-2 border-primary/50' : ''}>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <User className="h-5 w-5" />
+                            {stat.userName}
+                          </CardTitle>
+                          {idx === 0 && <Badge>Mayor Balance</Badge>}
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid gap-4 md:grid-cols-4">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Ingresos</p>
+                            <p className="text-xl font-bold text-green-700 dark:text-green-400">
+                              {formatCurrency(stat.totalIncome)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Egresos</p>
+                            <p className="text-xl font-bold text-red-700 dark:text-red-400">
+                              {formatCurrency(stat.totalExpense)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Balance</p>
+                            <p className={`text-xl font-bold ${
+                              stat.balance >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
+                            }`}>
+                              {formatCurrency(stat.balance)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Transacciones</p>
+                            <p className="text-xl font-bold">
+                              {stat.transactionCount}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
