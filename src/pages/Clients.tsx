@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -19,7 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Mail, Phone, Building, User, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Mail, Phone, Building, User, Pencil, Trash2, LayoutGrid, LayoutList } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Client {
@@ -37,6 +39,7 @@ export default function Clients() {
   const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [open, setOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deleteClientId, setDeleteClientId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -187,12 +190,25 @@ export default function Clients() {
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Clientes</h2>
             <p className="text-muted-foreground">Gestiona tu base de datos de clientes</p>
           </div>
-          <Dialog open={open} onOpenChange={handleCloseDialog}>
+          <div className="flex items-center gap-3">
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'cards' | 'list')}>
+              <TabsList>
+                <TabsTrigger value="cards" className="gap-2">
+                  <LayoutGrid className="h-4 w-4" />
+                  Tarjetas
+                </TabsTrigger>
+                <TabsTrigger value="list" className="gap-2">
+                  <LayoutList className="h-4 w-4" />
+                  Lista
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <Dialog open={open} onOpenChange={handleCloseDialog}>
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
@@ -291,9 +307,11 @@ export default function Clients() {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {viewMode === 'cards' ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {clients.map((client) => (
             <Card key={client.id}>
               <CardHeader>
@@ -357,7 +375,91 @@ export default function Clients() {
               </CardContent>
             </Card>
           ))}
-        </div>
+          </div>
+        ) : (
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Teléfono</TableHead>
+                  <TableHead>RFC</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {clients.map((client) => (
+                  <TableRow key={client.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <Building className="h-4 w-4 text-muted-foreground" />
+                        {client.first_name} {client.last_name}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {client.person_type && (
+                        <Badge variant="outline" className="gap-1">
+                          <User className="h-3 w-3" />
+                          {client.person_type === 'persona_fisica' 
+                            ? 'Física'
+                            : client.person_type === 'persona_moral'
+                            ? 'Moral'
+                            : 'N/A'}
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {client.email ? (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          {client.email}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {client.phone ? (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          {client.phone}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {client.vat_number || <span className="text-muted-foreground">-</span>}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(client)}
+                          title="Editar"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeleteClientId(client.id)}
+                          className="hover:bg-destructive/10 hover:text-destructive"
+                          title="Eliminar"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
 
         <AlertDialog open={!!deleteClientId} onOpenChange={() => setDeleteClientId(null)}>
           <AlertDialogContent>
