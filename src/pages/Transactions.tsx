@@ -7,11 +7,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Plus, TrendingUp, TrendingDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/currency';
+import { ProviderManager } from '@/components/transactions/ProviderManager';
+import { ConceptManager } from '@/components/transactions/ConceptManager';
 
 interface Transaction {
   id: string;
@@ -368,22 +371,32 @@ export default function Transactions() {
                     </Select>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    <Label>Proveedor</Label>
-                    <Select value={formData.provider_id} onValueChange={(v) => setFormData({ ...formData, provider_id: v })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar proveedor (opcional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {providers.map((provider) => (
-                          <SelectItem key={provider.id} value={provider.id}>
-                            {provider.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <>
+                    <div className="space-y-2">
+                      <Label>Proveedor</Label>
+                      <Select value={formData.provider_id} onValueChange={(v) => setFormData({ ...formData, provider_id: v })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar proveedor (opcional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {providers.map((provider) => (
+                            <SelectItem key={provider.id} value={provider.id}>
+                              {provider.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <Separator />
+
+                    <ProviderManager providers={providers} onUpdate={fetchData} />
+                  </>
                 )}
+
+                <Separator />
+
+                <ConceptManager concepts={concepts} onUpdate={fetchData} />
 
                 <div className="space-y-2 relative">
                   <Label htmlFor="concept">Concepto</Label>
