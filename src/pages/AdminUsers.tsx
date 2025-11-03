@@ -34,6 +34,8 @@ interface UserProfile {
   subscription_end_date: string | null;
   subscription_duration_days: number;
   is_suspended: boolean;
+  business_name: string | null;
+  fiscal_name: string | null;
 }
 
 interface UserRole {

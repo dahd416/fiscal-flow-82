@@ -83,8 +83,10 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          business_name: string | null
           created_at: string | null
           first_name: string | null
+          fiscal_name: string | null
           id: string
           is_suspended: boolean | null
           last_name: string | null
@@ -95,8 +97,10 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          business_name?: string | null
           created_at?: string | null
           first_name?: string | null
+          fiscal_name?: string | null
           id: string
           is_suspended?: boolean | null
           last_name?: string | null
@@ -107,8 +111,10 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          business_name?: string | null
           created_at?: string | null
           first_name?: string | null
+          fiscal_name?: string | null
           id?: string
           is_suspended?: boolean | null
           last_name?: string | null
