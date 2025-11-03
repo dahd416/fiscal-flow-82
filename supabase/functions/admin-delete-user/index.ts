@@ -36,19 +36,21 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Check if user is admin or super_admin
-    const { data: adminRole } = await supabase
+    const { data: userRole, error: roleError } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
-      .in("role", ["admin", "super_admin"])
-      .single();
+      .maybeSingle();
 
-    if (!adminRole) {
+    if (roleError || !userRole || (userRole.role !== "admin" && userRole.role !== "super_admin")) {
+      console.log("Access denied for user:", user.id, "Role:", userRole?.role);
       return new Response(
         JSON.stringify({ error: "Forbidden - Admin access required" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    
+    console.log("Admin access granted for user:", user.id, "Role:", userRole.role);
 
     // Get user ID to delete
     const { userId } = await req.json();
