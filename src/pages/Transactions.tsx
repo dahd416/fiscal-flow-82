@@ -89,6 +89,13 @@ export default function Transactions() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validar que se haya seleccionado forma de pago
+    if (!formData.payment_method) {
+      toast.error('Por favor selecciona una forma de pago');
+      return;
+    }
+    
     const amount = parseFloat(formData.amount);
     const vatRate = parseFloat(formData.vat_rate);
     const vatAmount = (amount * vatRate) / 100;
@@ -222,8 +229,12 @@ export default function Transactions() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Forma de Pago</Label>
-                  <Select value={formData.payment_method} onValueChange={(v) => setFormData({ ...formData, payment_method: v })}>
+                  <Label>Forma de Pago *</Label>
+                  <Select 
+                    value={formData.payment_method} 
+                    onValueChange={(v) => setFormData({ ...formData, payment_method: v })}
+                    required
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar forma de pago" />
                     </SelectTrigger>
