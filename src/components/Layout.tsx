@@ -88,7 +88,7 @@ export function Layout({ children }: LayoutProps) {
                 <Link to="/admin/users">
                   <Button variant="outline" size="sm" className="gap-2">
                     <UserCog className="h-4 w-4" />
-                    <span className="hidden lg:inline">Usuarios</span>
+                    <span className="hidden lg:inline">Plataforma</span>
                   </Button>
                 </Link>
               )}
