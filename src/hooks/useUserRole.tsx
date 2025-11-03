@@ -2,19 +2,21 @@ import { useState, useEffect } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
-export function useIsAdmin() {
+type UserRole = 'super_admin' | 'admin' | 'user' | null;
+
+export function useUserRole() {
   const { user } = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState<UserRole>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
-      setIsAdmin(false);
+      setRole(null);
       setLoading(false);
       return;
     }
 
-    const checkAdmin = async () => {
+    const fetchRole = async () => {
       try {
         const { data, error } = await supabase
           .from('user_roles')
@@ -23,18 +25,25 @@ export function useIsAdmin() {
           .single();
 
         if (error) throw error;
-        const role = data?.role as string;
-        setIsAdmin(role === 'admin' || role === 'super_admin');
+        setRole(data?.role || 'user');
       } catch (error) {
-        console.error('Error checking admin status:', error);
-        setIsAdmin(false);
+        console.error('Error fetching user role:', error);
+        setRole('user');
       } finally {
         setLoading(false);
       }
     };
 
-    checkAdmin();
+    fetchRole();
   }, [user]);
 
-  return { isAdmin, loading };
+  const isAdmin = role === 'admin' || role === 'super_admin';
+  const isSuperAdmin = role === 'super_admin';
+
+  return {
+    role,
+    isAdmin,
+    isSuperAdmin,
+    loading,
+  };
 }

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { useIsAdmin } from '@/hooks/useIsAdmin';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
-import { Trash2, Shield, User as UserIcon, Calendar, Ban, Pencil, UserPlus, Search, Filter, X } from 'lucide-react';
+import { Trash2, Shield, User as UserIcon, Calendar, Ban, Pencil, UserPlus, Search, Filter, X, Crown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
   AlertDialog,
@@ -52,7 +52,7 @@ interface UserWithRole extends UserProfile {
 }
 
 export default function AdminUsers() {
-  const { isAdmin, loading: adminLoading } = useIsAdmin();
+  const { isAdmin, isSuperAdmin, loading: adminLoading } = useUserRole();
   const navigate = useNavigate();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserWithRole[]>([]);
@@ -63,7 +63,7 @@ export default function AdminUsers() {
   const [subscriptionEndDate, setSubscriptionEndDate] = useState('');
   const [subscriptionDuration, setSubscriptionDuration] = useState('30');
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended' | 'admin'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'suspended' | 'admin' | 'super_admin'>('all');
   const [subscriptionFilter, setSubscriptionFilter] = useState<'all' | 'active' | 'expiring' | 'expired'>('all');
 
   useEffect(() => {
@@ -101,9 +101,10 @@ export default function AdminUsers() {
     // Status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter((user) => {
-        if (statusFilter === 'admin') return user.roles.includes('admin');
+        if (statusFilter === 'super_admin') return user.roles.includes('super_admin');
+        if (statusFilter === 'admin') return user.roles.includes('admin') && !user.roles.includes('super_admin');
         if (statusFilter === 'suspended') return user.is_suspended;
-        if (statusFilter === 'active') return !user.is_suspended && !user.roles.includes('admin');
+        if (statusFilter === 'active') return !user.is_suspended && !user.roles.includes('admin') && !user.roles.includes('super_admin');
         return true;
       });
     }
@@ -152,7 +153,12 @@ export default function AdminUsers() {
     }
   };
 
-  const handleToggleAdmin = async (userId: string, isCurrentlyAdmin: boolean) => {
+  const handleToggleAdmin = async (userId: string, isCurrentlyAdmin: boolean, isSuperAdmin: boolean) => {
+    if (isSuperAdmin) {
+      toast.error('No puedes modificar el rol del Super Admin');
+      return;
+    }
+
     try {
       if (isCurrentlyAdmin) {
         // Remove admin role
@@ -183,6 +189,14 @@ export default function AdminUsers() {
 
   const handleDeleteUser = async () => {
     if (!deleteUserId) return;
+
+    // Check if trying to delete super admin
+    const userToDelete = users.find(u => u.id === deleteUserId);
+    if (userToDelete?.roles.includes('super_admin')) {
+      toast.error('No puedes eliminar al Super Admin');
+      setDeleteUserId(null);
+      return;
+    }
 
     try {
       const { error } = await supabase.functions.invoke('admin-delete-user', {
@@ -332,6 +346,7 @@ export default function AdminUsers() {
                     <SelectItem value="all">Todos los estados</SelectItem>
                     <SelectItem value="active">Activos</SelectItem>
                     <SelectItem value="suspended">Suspendidos</SelectItem>
+                    <SelectItem value="super_admin">Super Admin</SelectItem>
                     <SelectItem value="admin">Administradores</SelectItem>
                   </SelectContent>
                 </Select>
@@ -385,7 +400,8 @@ export default function AdminUsers() {
             </TableHeader>
             <TableBody>
               {filteredUsers.map((user, index) => {
-                const isUserAdmin = user.roles.includes('admin');
+                const isUserAdmin = user.roles.includes('admin') || user.roles.includes('super_admin');
+                const isUserSuperAdmin = user.roles.includes('super_admin');
                 const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Sin nombre';
                 
                 const daysUntilExpiration = user.subscription_end_date 
@@ -416,7 +432,12 @@ export default function AdminUsers() {
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">{user.rfc || 'N/A'}</TableCell>
                     <TableCell>
-                      {isUserAdmin ? (
+                      {isUserSuperAdmin ? (
+                        <Badge variant="default" className="gap-1 animate-scale-in bg-gradient-to-r from-yellow-500 to-orange-500">
+                          <Crown className="h-3 w-3" />
+                          Super Admin
+                        </Badge>
+                      ) : isUserAdmin ? (
                         <Badge variant="default" className="gap-1 animate-scale-in">
                           <Shield className="h-3 w-3" />
                           Admin
@@ -517,34 +538,53 @@ export default function AdminUsers() {
                             </Tooltip>
                           </>
                         )}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleToggleAdmin(user.id, isUserAdmin)}
-                              className="hover-scale"
-                            >
-                              <Shield className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            {isUserAdmin ? 'Remover rol admin' : 'Hacer administrador'}
-                          </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => setDeleteUserId(user.id)}
-                              className="hover-scale"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Eliminar usuario</TooltipContent>
-                        </Tooltip>
+                        {!isUserSuperAdmin && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleToggleAdmin(user.id, user.roles.includes('admin') && !isUserSuperAdmin, isUserSuperAdmin)}
+                                className="hover-scale"
+                              >
+                                <Shield className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {user.roles.includes('admin') ? 'Remover rol admin' : 'Hacer administrador'}
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                        {!isUserSuperAdmin && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setDeleteUserId(user.id)}
+                                className="hover-scale text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Eliminar usuario</TooltipContent>
+                          </Tooltip>
+                        )}
+                        {isUserSuperAdmin && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled
+                                className="opacity-50 cursor-not-allowed"
+                              >
+                                <Crown className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Super Admin no puede ser modificado</TooltipContent>
+                          </Tooltip>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
