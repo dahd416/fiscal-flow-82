@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Upload, Save, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface PlatformSettings {
   id: string;
@@ -16,6 +17,7 @@ interface PlatformSettings {
 }
 
 export function PlatformCustomization() {
+  const queryClient = useQueryClient();
   const [settings, setSettings] = useState<PlatformSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -103,6 +105,8 @@ export function PlatformCustomization() {
       setLogoPreview(null);
       setLogoFile(null);
       setSettings({ ...settings, logo_url: null });
+      // Invalidar el cache para que se actualice en toda la app
+      queryClient.invalidateQueries({ queryKey: ['platform-settings'] });
       toast.success('Logo eliminado');
     } catch (error) {
       console.error('Error removing logo:', error);
@@ -181,7 +185,9 @@ export function PlatformCustomization() {
       }
 
       toast.success('Configuración guardada exitosamente');
-      loadSettings();
+      await loadSettings();
+      // Invalidar el cache para que se actualice en toda la app
+      queryClient.invalidateQueries({ queryKey: ['platform-settings'] });
       setLogoFile(null);
     } catch (error) {
       console.error('Error saving settings:', error);
