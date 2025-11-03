@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Plus, TrendingUp, TrendingDown } from 'lucide-react';
@@ -20,13 +21,16 @@ interface Transaction {
   vat_rate: number;
   vat_amount: number;
   concept: string | null;
+  description: string | null;
   folio: string | null;
   payment_method: string | null;
   is_invoice: boolean;
   transaction_date: string;
   client_id: string | null;
+  provider_id: string | null;
   quotation_id: string | null;
   clients: { first_name: string; last_name: string | null } | null;
+  providers: { name: string } | null;
   quotations: { quotation_number: string; title: string; vat_amount: number; subtotal: number; total_amount: number } | null;
 }
 
@@ -34,30 +38,40 @@ export default function Transactions() {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [clients, setClients] = useState<any[]>([]);
+  const [providers, setProviders] = useState<any[]>([]);
   const [quotations, setQuotations] = useState<any[]>([]);
+  const [concepts, setConcepts] = useState<string[]>([]);
+  const [filteredConcepts, setFilteredConcepts] = useState<string[]>([]);
+  const [showConceptSuggestions, setShowConceptSuggestions] = useState(false);
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     type: 'income',
     amount: '',
     vat_rate: '16',
     concept: '',
+    description: '',
     folio: '',
     payment_method: '',
     is_invoice: false,
     transaction_date: new Date().toISOString().split('T')[0],
     client_id: '',
+    provider_id: '',
     quotation_id: '',
   });
 
   const fetchData = async () => {
-    const [transactionsRes, clientsRes, quotationsRes] = await Promise.all([
-      supabase.from('transactions').select('*, clients(first_name, last_name), quotations(quotation_number, title, vat_amount, subtotal, total_amount)').order('transaction_date', { ascending: false }),
+    const [transactionsRes, clientsRes, providersRes, quotationsRes, conceptsRes] = await Promise.all([
+      supabase.from('transactions').select('*, clients(first_name, last_name), providers(name), quotations(quotation_number, title, vat_amount, subtotal, total_amount)').order('transaction_date', { ascending: false }),
       supabase.from('clients').select('id, first_name, last_name'),
+      supabase.from('providers').select('id, name'),
       supabase.from('quotations').select('id, quotation_number, title, status, vat_amount, subtotal, total_amount').eq('status', 'accepted').order('quotation_number', { ascending: false }),
+      supabase.from('transaction_concepts').select('concept').order('usage_count', { ascending: false }).limit(50),
     ]);
     if (transactionsRes.data) setTransactions(transactionsRes.data as Transaction[]);
     if (clientsRes.data) setClients(clientsRes.data);
+    if (providersRes.data) setProviders(providersRes.data);
     if (quotationsRes.data) setQuotations(quotationsRes.data);
+    if (conceptsRes.data) setConcepts(conceptsRes.data.map(c => c.concept));
   };
 
   useEffect(() => {
@@ -88,35 +102,100 @@ export default function Transactions() {
     }
   };
 
+  const handleConceptChange = (value: string) => {
+    setFormData({ ...formData, concept: value });
+    if (value.trim()) {
+      const filtered = concepts.filter(c => 
+        c.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredConcepts(filtered);
+      setShowConceptSuggestions(filtered.length > 0);
+    } else {
+      setShowConceptSuggestions(false);
+    }
+  };
+
+  const selectConcept = (concept: string) => {
+    setFormData({ ...formData, concept });
+    setShowConceptSuggestions(false);
+  };
+
+  const saveOrUpdateConcept = async (concept: string) => {
+    if (!concept.trim()) return;
+    
+    const { data: existing } = await supabase
+      .from('transaction_concepts')
+      .select('id, usage_count')
+      .eq('user_id', user!.id)
+      .eq('concept', concept)
+      .single();
+
+    if (existing) {
+      await supabase
+        .from('transaction_concepts')
+        .update({ 
+          usage_count: existing.usage_count + 1,
+          last_used_at: new Date().toISOString()
+        })
+        .eq('id', existing.id);
+    } else {
+      await supabase
+        .from('transaction_concepts')
+        .insert([{
+          user_id: user!.id,
+          concept,
+          usage_count: 1
+        }]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validar que se haya seleccionado forma de pago
     if (!formData.payment_method) {
       toast.error('Por favor selecciona una forma de pago');
       return;
     }
-    
-    // El amount ingresado es el SUBTOTAL (sin IVA)
-    const subtotal = parseFloat(formData.amount);
+
+    let subtotal: number;
+    let total: number;
+    let vatAmount: number;
     const vatRate = parseFloat(formData.vat_rate);
-    const vatAmount = (subtotal * vatRate) / 100;
-    const total = subtotal + vatAmount;
+
+    if (formData.type === 'expense') {
+      // Para gastos: el usuario ingresa el TOTAL (con IVA incluido)
+      total = parseFloat(formData.amount);
+      // Calcular subtotal: total / (1 + (vatRate/100))
+      subtotal = total / (1 + (vatRate / 100));
+      vatAmount = total - subtotal;
+    } else {
+      // Para ingresos: el usuario ingresa el SUBTOTAL (sin IVA)
+      subtotal = parseFloat(formData.amount);
+      vatAmount = (subtotal * vatRate) / 100;
+      total = subtotal + vatAmount;
+    }
+
+    // Guardar o actualizar el concepto
+    if (formData.concept) {
+      await saveOrUpdateConcept(formData.concept);
+    }
 
     const { error } = await supabase.from('transactions').insert([
       {
         user_id: user!.id,
         type: formData.type,
         subtotal,
-        amount: total, // El total incluyendo IVA
+        amount: total,
         vat_rate: vatRate,
         vat_amount: vatAmount,
         concept: formData.concept || null,
+        description: formData.description || null,
         folio: formData.folio || null,
         payment_method: formData.payment_method || null,
         is_invoice: formData.is_invoice,
         transaction_date: formData.transaction_date,
-        client_id: formData.client_id || null,
+        client_id: formData.type === 'income' ? (formData.client_id || null) : null,
+        provider_id: formData.type === 'expense' ? (formData.provider_id || null) : null,
         quotation_id: formData.quotation_id || null,
       }
     ]);
@@ -131,11 +210,13 @@ export default function Transactions() {
         amount: '',
         vat_rate: '16',
         concept: '',
+        description: '',
         folio: '',
         payment_method: '',
         is_invoice: false,
         transaction_date: new Date().toISOString().split('T')[0],
         client_id: '',
+        provider_id: '',
         quotation_id: '',
       });
       fetchData();
@@ -210,7 +291,9 @@ export default function Transactions() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="amount">Subtotal (sin IVA) *</Label>
+                  <Label htmlFor="amount">
+                    {formData.type === 'expense' ? 'Monto Total (con IVA incluido) *' : 'Subtotal (sin IVA) *'}
+                  </Label>
                   <Input
                     id="amount"
                     type="number"
@@ -220,7 +303,10 @@ export default function Transactions() {
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    Ingresa el monto sin IVA. El IVA se calculará automáticamente.
+                    {formData.type === 'expense' 
+                      ? 'Ingresa el monto total. El IVA se calculará automáticamente.'
+                      : 'Ingresa el monto sin IVA. El IVA se calculará automáticamente.'
+                    }
                   </p>
                 </div>
 
@@ -265,29 +351,79 @@ export default function Transactions() {
                   </Label>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Cliente</Label>
-                  <Select value={formData.client_id} onValueChange={(v) => setFormData({ ...formData, client_id: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar cliente (opcional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clients.map((client) => (
-                        <SelectItem key={client.id} value={client.id}>
-                          {client.first_name} {client.last_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {formData.type === 'income' ? (
+                  <div className="space-y-2">
+                    <Label>Cliente</Label>
+                    <Select value={formData.client_id} onValueChange={(v) => setFormData({ ...formData, client_id: v })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar cliente (opcional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clients.map((client) => (
+                          <SelectItem key={client.id} value={client.id}>
+                            {client.first_name} {client.last_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label>Proveedor</Label>
+                    <Select value={formData.provider_id} onValueChange={(v) => setFormData({ ...formData, provider_id: v })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar proveedor (opcional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {providers.map((provider) => (
+                          <SelectItem key={provider.id} value={provider.id}>
+                            {provider.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
-                <div className="space-y-2">
+                <div className="space-y-2 relative">
                   <Label htmlFor="concept">Concepto</Label>
                   <Input
                     id="concept"
                     value={formData.concept}
-                    onChange={(e) => setFormData({ ...formData, concept: e.target.value })}
-                    placeholder="Descripción del concepto"
+                    onChange={(e) => handleConceptChange(e.target.value)}
+                    onFocus={() => {
+                      if (filteredConcepts.length > 0) {
+                        setShowConceptSuggestions(true);
+                      }
+                    }}
+                    onBlur={() => {
+                      setTimeout(() => setShowConceptSuggestions(false), 200);
+                    }}
+                    placeholder="Escribe un concepto"
+                  />
+                  {showConceptSuggestions && filteredConcepts.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-auto">
+                      {filteredConcepts.map((concept, index) => (
+                        <div
+                          key={index}
+                          className="px-3 py-2 hover:bg-accent cursor-pointer text-sm"
+                          onClick={() => selectConcept(concept)}
+                        >
+                          {concept}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">Descripción (opcional)</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Información adicional sobre la transacción"
+                    rows={3}
                   />
                 </div>
 
@@ -314,9 +450,10 @@ export default function Transactions() {
                 <TableHead>Fecha</TableHead>
                 <TableHead>Folio</TableHead>
                 <TableHead>Tipo</TableHead>
-                <TableHead>Cliente</TableHead>
+                <TableHead>Cliente/Proveedor</TableHead>
                 <TableHead>Cotización</TableHead>
                 <TableHead>Concepto</TableHead>
+                <TableHead>Descripción</TableHead>
                 <TableHead>Forma de Pago</TableHead>
                 <TableHead>Factura</TableHead>
                 <TableHead className="text-right">Subtotal</TableHead>
@@ -346,9 +483,11 @@ export default function Transactions() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {transaction.clients 
-                      ? `${transaction.clients.first_name} ${transaction.clients.last_name || ''}`
-                      : '-'}
+                    {transaction.type === 'income' 
+                      ? (transaction.clients 
+                          ? `${transaction.clients.first_name} ${transaction.clients.last_name || ''}`
+                          : '-')
+                      : (transaction.providers?.name || '-')}
                   </TableCell>
                   <TableCell>
                     {transaction.quotations ? (
@@ -360,6 +499,9 @@ export default function Transactions() {
                     ) : '-'}
                   </TableCell>
                   <TableCell>{transaction.concept || '-'}</TableCell>
+                  <TableCell className="max-w-[200px] truncate" title={transaction.description || ''}>
+                    {transaction.description || '-'}
+                  </TableCell>
                   <TableCell>
                     {transaction.payment_method ? (
                       <span className="capitalize">{transaction.payment_method}</span>

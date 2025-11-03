@@ -212,6 +212,42 @@ export type Database = {
         }
         Relationships: []
       }
+      providers: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          updated_at: string | null
+          user_id: string
+          vat_number: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          updated_at?: string | null
+          user_id: string
+          vat_number?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          updated_at?: string | null
+          user_id?: string
+          vat_number?: string | null
+        }
+        Relationships: []
+      }
       quotation_items: {
         Row: {
           created_at: string | null
@@ -318,16 +354,45 @@ export type Database = {
           },
         ]
       }
+      transaction_concepts: {
+        Row: {
+          concept: string
+          created_at: string | null
+          id: string
+          last_used_at: string | null
+          usage_count: number | null
+          user_id: string
+        }
+        Insert: {
+          concept: string
+          created_at?: string | null
+          id?: string
+          last_used_at?: string | null
+          usage_count?: number | null
+          user_id: string
+        }
+        Update: {
+          concept?: string
+          created_at?: string | null
+          id?: string
+          last_used_at?: string | null
+          usage_count?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number
           client_id: string | null
           concept: string | null
           created_at: string | null
+          description: string | null
           folio: string | null
           id: string
           is_invoice: boolean | null
           payment_method: string | null
+          provider_id: string | null
           quotation_id: string | null
           subtotal: number | null
           transaction_date: string
@@ -342,10 +407,12 @@ export type Database = {
           client_id?: string | null
           concept?: string | null
           created_at?: string | null
+          description?: string | null
           folio?: string | null
           id?: string
           is_invoice?: boolean | null
           payment_method?: string | null
+          provider_id?: string | null
           quotation_id?: string | null
           subtotal?: number | null
           transaction_date: string
@@ -360,10 +427,12 @@ export type Database = {
           client_id?: string | null
           concept?: string | null
           created_at?: string | null
+          description?: string | null
           folio?: string | null
           id?: string
           is_invoice?: boolean | null
           payment_method?: string | null
+          provider_id?: string | null
           quotation_id?: string | null
           subtotal?: number | null
           transaction_date?: string
@@ -374,6 +443,13 @@ export type Database = {
           vat_rate?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_transactions_provider"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "transactions_client_id_fkey"
             columns: ["client_id"]
