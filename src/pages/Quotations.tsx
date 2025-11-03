@@ -4,17 +4,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,11 +19,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { QuotationDialog } from '@/components/quotations/QuotationDialog';
 import { QuotationItemsManager } from '@/components/quotations/QuotationItemsManager';
+import { QuotationList } from '@/components/quotations/QuotationList';
+import { QuotationKanban } from '@/components/quotations/QuotationKanban';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Search, FileText } from 'lucide-react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { formatCurrency } from '@/lib/currency';
+import { Plus, Search, LayoutList, LayoutGrid } from 'lucide-react';
 
 interface Quotation {
   id: string;
@@ -73,6 +64,7 @@ export default function Quotations() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [itemsDialogOpen, setItemsDialogOpen] = useState(false);
   const [editingQuotation, setEditingQuotation] = useState<Quotation | null>(null);
@@ -269,21 +261,9 @@ export default function Quotations() {
     setItemsDialogOpen(true);
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, { variant: any; label: string }> = {
-      draft: { variant: 'secondary', label: 'Borrador' },
-      sent: { variant: 'default', label: 'Enviada' },
-      accepted: { variant: 'default', label: 'Aceptada' },
-      rejected: { variant: 'destructive', label: 'Rechazada' },
-      expired: { variant: 'outline', label: 'Expirada' },
-    };
-
-    const config = variants[status] || variants.draft;
-    return (
-      <Badge variant={config.variant} className="capitalize">
-        {config.label}
-      </Badge>
-    );
+  const handleEdit = (quotation: Quotation) => {
+    setEditingQuotation(quotation);
+    setDialogOpen(true);
   };
 
   const filteredQuotations = quotations.filter((quotation) => {
@@ -313,14 +293,29 @@ export default function Quotations() {
 
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por título, número o cliente..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="max-w-sm"
-              />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
+              <div className="flex items-center gap-2 flex-1 w-full sm:w-auto">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por título, número o cliente..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="max-w-sm"
+                />
+              </div>
+              
+              <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'kanban')}>
+                <TabsList>
+                  <TabsTrigger value="list" className="gap-2">
+                    <LayoutList className="h-4 w-4" />
+                    Lista
+                  </TabsTrigger>
+                  <TabsTrigger value="kanban" className="gap-2">
+                    <LayoutGrid className="h-4 w-4" />
+                    Kanban
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
 
             {loading ? (
@@ -330,82 +325,24 @@ export default function Quotations() {
                 <Skeleton className="h-12 w-full" />
               </div>
             ) : filteredQuotations.length > 0 ? (
-              <div className="border rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Número</TableHead>
-                      <TableHead>Título</TableHead>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead>Válida hasta</TableHead>
-                      <TableHead className="text-right">Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredQuotations.map((quotation) => (
-                      <TableRow key={quotation.id}>
-                        <TableCell className="font-mono text-sm">
-                          {quotation.quotation_number}
-                        </TableCell>
-                        <TableCell className="font-medium">{quotation.title}</TableCell>
-                        <TableCell>
-                          {quotation.clients?.name || (
-                            <span className="text-muted-foreground">Sin cliente</span>
-                          )}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(quotation.status)}</TableCell>
-                        <TableCell className="text-right font-semibold">
-                          {formatCurrency(quotation.total_amount)}
-                        </TableCell>
-                        <TableCell>
-                          {quotation.valid_until ? (
-                            format(new Date(quotation.valid_until), 'PP', { locale: es })
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleManageItems(quotation)}
-                              title="Gestionar items"
-                            >
-                              <FileText className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                setEditingQuotation(quotation);
-                                setDialogOpen(true);
-                              }}
-                              title="Editar"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setDeleteQuotationId(quotation.id)}
-                              className="hover:bg-destructive/10 hover:text-destructive"
-                              title="Eliminar"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              viewMode === 'list' ? (
+                <QuotationList
+                  quotations={filteredQuotations}
+                  onEdit={handleEdit}
+                  onDelete={setDeleteQuotationId}
+                  onManageItems={handleManageItems}
+                />
+              ) : (
+                <QuotationKanban
+                  quotations={filteredQuotations}
+                  onEdit={handleEdit}
+                  onDelete={setDeleteQuotationId}
+                  onManageItems={handleManageItems}
+                />
+              )
             ) : (
               <div className="text-center py-12 text-muted-foreground">
-                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>
                   {searchQuery
                     ? 'No se encontraron cotizaciones'
