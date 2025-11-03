@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Layout } from '@/components/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { DollarSign, Users, Receipt, TrendingUp } from 'lucide-react';
+import { DollarSign, Users, Receipt, TrendingUp, TrendingDown, Wallet, CreditCard, AlertCircle, PiggyBank, FileText } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -99,54 +100,90 @@ export default function Dashboard() {
     fetchStats();
   }, [user]);
 
-  const financialCards = [
+  const chartData = [
+    {
+      name: 'Ingresos',
+      valor: stats.ingresos,
+      fill: 'hsl(var(--success))',
+    },
+    {
+      name: 'Egresos',
+      valor: stats.egresos,
+      fill: 'hsl(var(--destructive))',
+    },
+  ];
+
+  const mainCards = [
+    {
+      title: 'Ingresos Totales',
+      value: `€${stats.ingresos.toFixed(2)}`,
+      description: 'Total de entradas',
+      icon: TrendingUp,
+      colorClass: 'text-[hsl(var(--success))]',
+      bgClass: 'bg-[hsl(var(--success)/0.1)]',
+    },
+    {
+      title: 'Egresos Totales',
+      value: `€${stats.egresos.toFixed(2)}`,
+      description: 'Total de salidas',
+      icon: TrendingDown,
+      colorClass: 'text-[hsl(var(--destructive))]',
+      bgClass: 'bg-[hsl(var(--destructive)/0.1)]',
+    },
+    {
+      title: 'Utilidad Después de Impuestos',
+      value: `€${stats.utilidadDespuesImpuestos.toFixed(2)}`,
+      description: 'Ganancia neta disponible',
+      icon: TrendingUp,
+      colorClass: stats.utilidadDespuesImpuestos >= 0 ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--destructive))]',
+      bgClass: stats.utilidadDespuesImpuestos >= 0 ? 'bg-[hsl(var(--success)/0.1)]' : 'bg-[hsl(var(--destructive)/0.1)]',
+    },
+    {
+      title: 'Dinero Disponible',
+      value: `€${stats.dineroDisponible.toFixed(2)}`,
+      description: 'Capital de trabajo',
+      icon: Wallet,
+      colorClass: 'text-[hsl(var(--primary))]',
+      bgClass: 'bg-[hsl(var(--primary)/0.1)]',
+    },
+  ];
+
+  const rentabilidadCards = [
     {
       title: 'Saldo Inicial',
       value: `€${stats.saldoInicial.toFixed(2)}`,
-      icon: DollarSign,
-    },
-    {
-      title: 'Ingresos',
-      value: `€${stats.ingresos.toFixed(2)}`,
-      icon: TrendingUp,
-      color: 'text-green-600',
-    },
-    {
-      title: 'Egresos',
-      value: `€${stats.egresos.toFixed(2)}`,
-      icon: Receipt,
-      color: 'text-red-600',
+      icon: PiggyBank,
     },
     {
       title: 'Utilidad antes de Impuestos',
       value: `€${stats.utilidadAntesImpuestos.toFixed(2)}`,
       icon: TrendingUp,
-    },
-    {
-      title: 'Resguardo de Impuestos (30%)',
-      value: `€${stats.resguardoImpuestos.toFixed(2)}`,
-      icon: Receipt,
-    },
-    {
-      title: 'Impuestos a Pagar (IVA)',
-      value: `€${stats.impuestosAPagar.toFixed(2)}`,
-      icon: Receipt,
-    },
-    {
-      title: 'Utilidad después de Impuestos',
-      value: `€${stats.utilidadDespuesImpuestos.toFixed(2)}`,
-      icon: TrendingUp,
+      colorClass: stats.utilidadAntesImpuestos >= 0 ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--destructive))]',
     },
     {
       title: 'Rendimiento',
       value: `${stats.rendimiento.toFixed(2)}%`,
       icon: TrendingUp,
+      colorClass: stats.rendimiento >= 0 ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--destructive))]',
+    },
+  ];
+
+  const impuestosCards = [
+    {
+      title: 'Resguardo de Impuestos (30%)',
+      value: `€${stats.resguardoImpuestos.toFixed(2)}`,
+      icon: AlertCircle,
+      colorClass: 'text-[hsl(var(--warning))]',
     },
     {
-      title: 'Dinero Disponible',
-      value: `€${stats.dineroDisponible.toFixed(2)}`,
-      icon: DollarSign,
+      title: 'Impuestos a Pagar (IVA)',
+      value: `€${stats.impuestosAPagar.toFixed(2)}`,
+      icon: FileText,
+      colorClass: 'text-[hsl(var(--warning))]',
     },
+  ];
+
+  const liquidezCards = [
     {
       title: 'Efectivo',
       value: `€${stats.efectivo.toFixed(2)}`,
@@ -155,18 +192,18 @@ export default function Dashboard() {
     {
       title: 'Tarjeta',
       value: `€${stats.tarjeta.toFixed(2)}`,
-      icon: DollarSign,
+      icon: CreditCard,
     },
     {
       title: 'Total',
       value: `€${stats.total.toFixed(2)}`,
-      icon: DollarSign,
+      icon: Wallet,
     },
     {
       title: 'Diferencia',
       value: `€${stats.diferencia.toFixed(2)}`,
       icon: TrendingUp,
-      color: stats.diferencia >= 0 ? 'text-green-600' : 'text-red-600',
+      colorClass: stats.diferencia >= 0 ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--destructive))]',
     },
   ];
 
@@ -189,45 +226,173 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {financialCards.map((stat) => {
-            const Icon = stat.icon;
+        {/* Tarjetas Principales Destacadas */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {mainCards.map((card) => {
+            const Icon = card.icon;
             return (
-              <Card key={stat.title}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    {stat.title}
-                  </CardTitle>
-                  <Icon className={`h-4 w-4 ${stat.color || 'text-muted-foreground'}`} />
+              <Card key={card.title} className="overflow-hidden">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                      {card.title}
+                    </CardTitle>
+                    <div className={`p-2 rounded-lg ${card.bgClass}`}>
+                      <Icon className={`h-5 w-5 ${card.colorClass}`} />
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className={`text-2xl font-bold ${stat.color || ''}`}>{stat.value}</div>
+                  <div className={`text-3xl font-bold ${card.colorClass}`}>
+                    {card.value}
+                  </div>
+                  <CardDescription className="text-xs mt-1">
+                    {card.description}
+                  </CardDescription>
                 </CardContent>
               </Card>
             );
           })}
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {summaryCards.map((stat) => {
-            const Icon = stat.icon;
-            return (
-              <Card key={stat.title}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    {stat.title}
-                  </CardTitle>
-                  <Icon className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {stat.description}
-                  </p>
-                </CardContent>
-              </Card>
-            );
-          })}
+        {/* Gráfico de Comparación */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Comparación Ingresos vs Egresos</CardTitle>
+            <CardDescription>Visualización de tus flujos financieros</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis dataKey="name" className="text-sm" />
+                <YAxis className="text-sm" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--popover))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '0.5rem',
+                  }}
+                  formatter={(value: number) => `€${value.toFixed(2)}`}
+                />
+                <Legend />
+                <Bar dataKey="valor" fill="currentColor" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Sección: Análisis de Rentabilidad */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-xl font-semibold">Análisis de Rentabilidad</h3>
+            <p className="text-sm text-muted-foreground">Métricas de desempeño financiero</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {rentabilidadCards.map((card) => {
+              const Icon = card.icon;
+              return (
+                <Card key={card.title}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      {card.title}
+                    </CardTitle>
+                    <Icon className={`h-4 w-4 ${card.colorClass || 'text-muted-foreground'}`} />
+                  </CardHeader>
+                  <CardContent>
+                    <div className={`text-2xl font-bold ${card.colorClass || ''}`}>
+                      {card.value}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Sección: Gestión Fiscal */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-xl font-semibold">Gestión Fiscal</h3>
+            <p className="text-sm text-muted-foreground">Control de impuestos y obligaciones</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {impuestosCards.map((card) => {
+              const Icon = card.icon;
+              return (
+                <Card key={card.title}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      {card.title}
+                    </CardTitle>
+                    <Icon className={`h-4 w-4 ${card.colorClass || 'text-muted-foreground'}`} />
+                  </CardHeader>
+                  <CardContent>
+                    <div className={`text-2xl font-bold ${card.colorClass || ''}`}>
+                      {card.value}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Sección: Liquidez */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-xl font-semibold">Liquidez</h3>
+            <p className="text-sm text-muted-foreground">Distribución de efectivo disponible</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {liquidezCards.map((card) => {
+              const Icon = card.icon;
+              return (
+                <Card key={card.title}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      {card.title}
+                    </CardTitle>
+                    <Icon className={`h-4 w-4 ${card.colorClass || 'text-muted-foreground'}`} />
+                  </CardHeader>
+                  <CardContent>
+                    <div className={`text-2xl font-bold ${card.colorClass || ''}`}>
+                      {card.value}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Sección: Estadísticas */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-xl font-semibold">Estadísticas</h3>
+            <p className="text-sm text-muted-foreground">Resumen de actividad</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {summaryCards.map((card) => {
+              const Icon = card.icon;
+              return (
+                <Card key={card.title}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      {card.title}
+                    </CardTitle>
+                    <Icon className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{card.value}</div>
+                    <p className="text-xs text-muted-foreground">
+                      {card.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </div>
       </div>
     </Layout>
