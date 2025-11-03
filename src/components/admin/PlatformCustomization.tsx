@@ -6,14 +6,17 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Upload, Save, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { Upload, Save, Image as ImageIcon, Trash2, Palette } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useQueryClient } from '@tanstack/react-query';
+import { Switch } from '@/components/ui/switch';
 
 interface PlatformSettings {
   id: string;
   platform_name: string;
   logo_url: string | null;
+  logo_background_enabled: boolean;
+  logo_background_color: string;
 }
 
 export function PlatformCustomization() {
@@ -25,6 +28,8 @@ export function PlatformCustomization() {
   const [platformName, setPlatformName] = useState('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [backgroundEnabled, setBackgroundEnabled] = useState(true);
+  const [backgroundColor, setBackgroundColor] = useState('#8b5cf6');
 
   useEffect(() => {
     loadSettings();
@@ -34,6 +39,8 @@ export function PlatformCustomization() {
     if (settings) {
       setPlatformName(settings.platform_name);
       setLogoPreview(settings.logo_url);
+      setBackgroundEnabled(settings.logo_background_enabled);
+      setBackgroundColor(settings.logo_background_color || '#8b5cf6');
     }
   }, [settings]);
 
@@ -169,6 +176,8 @@ export function PlatformCustomization() {
           .update({
             platform_name: platformName,
             logo_url: logoUrl,
+            logo_background_enabled: backgroundEnabled,
+            logo_background_color: backgroundColor,
           })
           .eq('id', settings.id);
 
@@ -179,6 +188,8 @@ export function PlatformCustomization() {
           .insert({
             platform_name: platformName,
             logo_url: logoUrl,
+            logo_background_enabled: backgroundEnabled,
+            logo_background_color: backgroundColor,
           });
 
         if (error) throw error;
@@ -300,6 +311,50 @@ export function PlatformCustomization() {
             </div>
           </div>
 
+          {/* Background Customization */}
+          <div className="space-y-4 pt-4 border-t">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-base">Fondo del Logo</Label>
+                <p className="text-sm text-muted-foreground">
+                  Activa un fondo de color detrás del logo
+                </p>
+              </div>
+              <Switch
+                checked={backgroundEnabled}
+                onCheckedChange={setBackgroundEnabled}
+              />
+            </div>
+
+            {backgroundEnabled && (
+              <div className="space-y-2 pl-4 border-l-2">
+                <Label htmlFor="bg-color" className="flex items-center gap-2">
+                  <Palette className="h-4 w-4" />
+                  Color de Fondo
+                </Label>
+                <div className="flex gap-3 items-center">
+                  <Input
+                    id="bg-color"
+                    type="color"
+                    value={backgroundColor}
+                    onChange={(e) => setBackgroundColor(e.target.value)}
+                    className="w-20 h-10 cursor-pointer"
+                  />
+                  <Input
+                    type="text"
+                    value={backgroundColor}
+                    onChange={(e) => setBackgroundColor(e.target.value)}
+                    placeholder="#8b5cf6"
+                    className="flex-1 font-mono text-sm"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Selecciona un color que combine con tu marca
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Save Button */}
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button
@@ -340,7 +395,14 @@ export function PlatformCustomization() {
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
-            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center overflow-hidden">
+            <div 
+              className="h-10 w-10 rounded-lg flex items-center justify-center overflow-hidden transition-all"
+              style={{
+                background: backgroundEnabled 
+                  ? backgroundColor 
+                  : 'transparent'
+              }}
+            >
               {logoPreview ? (
                 <img src={logoPreview} alt="Logo" className="h-full w-full object-contain p-1" />
               ) : (

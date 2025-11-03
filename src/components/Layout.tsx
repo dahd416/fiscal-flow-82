@@ -57,7 +57,14 @@ export function Layout({ children }: LayoutProps) {
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-8">
               <Link to="/dashboard" className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center overflow-hidden">
+                <div 
+                  className="h-8 w-8 rounded-lg flex items-center justify-center overflow-hidden transition-all"
+                  style={{
+                    background: platformSettings?.logo_background_enabled 
+                      ? platformSettings?.logo_background_color || 'hsl(var(--primary))'
+                      : 'transparent'
+                  }}
+                >
                   {platformSettings?.logo_url ? (
                     <img 
                       src={platformSettings.logo_url} 
