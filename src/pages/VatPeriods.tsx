@@ -53,7 +53,8 @@ export default function VatPeriods() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [deleteEventId, setDeleteEventId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+  const [loadingUsers, setLoadingUsers] = useState(true);
 
   // Admin specific states
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -64,6 +65,7 @@ export default function VatPeriods() {
       if (isAdmin) {
         loadUsers();
       } else {
+        setLoadingUsers(false);
         setSelectedUserId(user.id);
         loadEvents(user.id);
       }
@@ -78,6 +80,7 @@ export default function VatPeriods() {
 
   const loadUsers = async () => {
     try {
+      setLoadingUsers(true);
       const { data, error } = await supabase.functions.invoke('admin-get-users');
       if (error) throw error;
       if (data?.users) {
@@ -89,12 +92,14 @@ export default function VatPeriods() {
     } catch (error: any) {
       console.error('Error loading users:', error);
       toast.error('Error al cargar usuarios');
+    } finally {
+      setLoadingUsers(false);
     }
   };
 
   const loadEvents = async (userId: string) => {
     try {
-      setLoading(true);
+      setLoadingEvents(true);
       const { data, error } = await supabase
         .from('calendar_events')
         .select('*')
@@ -107,7 +112,7 @@ export default function VatPeriods() {
       console.error('Error loading events:', error);
       toast.error('Error al cargar eventos');
     } finally {
-      setLoading(false);
+      setLoadingEvents(false);
     }
   };
 
@@ -209,11 +214,15 @@ export default function VatPeriods() {
             </p>
           </div>
           <div className="flex gap-2">
-            {isAdmin && users.length > 0 && (
-              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+            {isAdmin && (
+              <Select 
+                value={selectedUserId} 
+                onValueChange={setSelectedUserId}
+                disabled={loadingUsers}
+              >
                 <SelectTrigger className="w-[250px]">
                   <Users className="h-4 w-4 mr-2" />
-                  <SelectValue />
+                  <SelectValue placeholder={loadingUsers ? "Cargando usuarios..." : "Selecciona un usuario"} />
                 </SelectTrigger>
                 <SelectContent>
                   {users.map((user) => (
@@ -226,7 +235,11 @@ export default function VatPeriods() {
                 </SelectContent>
               </Select>
             )}
-            <Button onClick={() => setDialogOpen(true)} className="gap-2 hover-scale">
+            <Button 
+              onClick={() => setDialogOpen(true)} 
+              className="gap-2 hover-scale"
+              disabled={!selectedUserId || (isAdmin && loadingUsers)}
+            >
               <Plus className="h-4 w-4" />
               Nuevo Evento
             </Button>
@@ -244,22 +257,23 @@ export default function VatPeriods() {
           </Card>
         )}
 
-        {loading ? (
-          <div className="grid gap-6 lg:grid-cols-[1fr,400px]">
+        <div className="grid gap-6 lg:grid-cols-[1fr,400px]">
+          {loadingEvents ? (
             <Card className="p-6">
               <Skeleton className="h-[600px]" />
             </Card>
-            <Card className="p-6">
-              <Skeleton className="h-[600px]" />
-            </Card>
-          </div>
-        ) : (
-          <div className="grid gap-6 lg:grid-cols-[1fr,400px]">
+          ) : (
             <CalendarView
               events={events}
               onDateSelect={setSelectedDate}
               selectedDate={selectedDate}
             />
+          )}
+          {loadingEvents ? (
+            <Card className="p-6">
+              <Skeleton className="h-[600px]" />
+            </Card>
+          ) : (
             <EventsList
               events={filteredEvents}
               selectedDate={selectedDate}
@@ -271,8 +285,8 @@ export default function VatPeriods() {
               onDelete={setDeleteEventId}
               isAdmin={isAdmin}
             />
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <EventDialog
