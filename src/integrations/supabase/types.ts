@@ -296,6 +296,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
+          quotation_id: string | null
           transaction_date: string
           type: string
           updated_at: string | null
@@ -310,6 +311,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          quotation_id?: string | null
           transaction_date: string
           type: string
           updated_at?: string | null
@@ -324,6 +326,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          quotation_id?: string | null
           transaction_date?: string
           type?: string
           updated_at?: string | null
@@ -337,6 +340,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_quotation_id_fkey"
+            columns: ["quotation_id"]
+            isOneToOne: false
+            referencedRelation: "quotations"
             referencedColumns: ["id"]
           },
         ]

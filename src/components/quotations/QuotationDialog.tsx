@@ -191,6 +191,7 @@ export function QuotationDialog({
                   <SelectItem value="sent">Enviada</SelectItem>
                   <SelectItem value="accepted">Aceptada</SelectItem>
                   <SelectItem value="rejected">Rechazada</SelectItem>
+                  <SelectItem value="completed">Completada</SelectItem>
                   <SelectItem value="expired">Expirada</SelectItem>
                 </SelectContent>
               </Select>

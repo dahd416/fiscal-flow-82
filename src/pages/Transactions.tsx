@@ -22,13 +22,16 @@ interface Transaction {
   category: string | null;
   transaction_date: string;
   client_id: string | null;
+  quotation_id: string | null;
   clients: { first_name: string; last_name: string | null } | null;
+  quotations: { quotation_number: string; title: string } | null;
 }
 
 export default function Transactions() {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [clients, setClients] = useState<any[]>([]);
+  const [quotations, setQuotations] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     type: 'income',
@@ -38,15 +41,18 @@ export default function Transactions() {
     category: '',
     transaction_date: new Date().toISOString().split('T')[0],
     client_id: '',
+    quotation_id: '',
   });
 
   const fetchData = async () => {
-    const [transactionsRes, clientsRes] = await Promise.all([
-      supabase.from('transactions').select('*, clients(first_name, last_name)').order('transaction_date', { ascending: false }),
+    const [transactionsRes, clientsRes, quotationsRes] = await Promise.all([
+      supabase.from('transactions').select('*, clients(first_name, last_name), quotations(quotation_number, title)').order('transaction_date', { ascending: false }),
       supabase.from('clients').select('id, first_name, last_name'),
+      supabase.from('quotations').select('id, quotation_number, title, status').eq('status', 'accepted').order('quotation_number', { ascending: false }),
     ]);
     if (transactionsRes.data) setTransactions(transactionsRes.data as Transaction[]);
     if (clientsRes.data) setClients(clientsRes.data);
+    if (quotationsRes.data) setQuotations(quotationsRes.data);
   };
 
   useEffect(() => {
@@ -70,6 +76,7 @@ export default function Transactions() {
         category: formData.category || null,
         transaction_date: formData.transaction_date,
         client_id: formData.client_id || null,
+        quotation_id: formData.quotation_id || null,
       }
     ]);
 
@@ -86,6 +93,7 @@ export default function Transactions() {
         category: '',
         transaction_date: new Date().toISOString().split('T')[0],
         client_id: '',
+        quotation_id: '',
       });
       fetchData();
     }
@@ -159,6 +167,26 @@ export default function Transactions() {
                     </SelectContent>
                   </Select>
                 </div>
+                {formData.type === 'income' && (
+                  <div className="space-y-2">
+                    <Label>Cotización (opcional)</Label>
+                    <Select value={formData.quotation_id} onValueChange={(v) => setFormData({ ...formData, quotation_id: v })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Vincular con cotización aceptada" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {quotations.map((quotation) => (
+                          <SelectItem key={quotation.id} value={quotation.id}>
+                            {quotation.quotation_number} - {quotation.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Al vincular una cotización aceptada con este ingreso, se marcará como completada
+                    </p>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="description">Descripción</Label>
                   <Input
@@ -198,6 +226,7 @@ export default function Transactions() {
                 <TableHead>Fecha</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Cliente</TableHead>
+                <TableHead>Cotización</TableHead>
                 <TableHead>Descripción</TableHead>
                 <TableHead>Categoría</TableHead>
                 <TableHead className="text-right">Monto</TableHead>
@@ -222,6 +251,15 @@ export default function Transactions() {
                     {transaction.clients 
                       ? `${transaction.clients.first_name} ${transaction.clients.last_name || ''}`
                       : '-'}
+                  </TableCell>
+                  <TableCell>
+                    {transaction.quotations ? (
+                      <div className="text-xs">
+                        <span className="font-mono">{transaction.quotations.quotation_number}</span>
+                        <br />
+                        <span className="text-muted-foreground">{transaction.quotations.title}</span>
+                      </div>
+                    ) : '-'}
                   </TableCell>
                   <TableCell>{transaction.description || '-'}</TableCell>
                   <TableCell>{transaction.category || '-'}</TableCell>

@@ -46,6 +46,7 @@ export function QuotationList({ quotations, onEdit, onDelete, onManageItems }: Q
       sent: { variant: 'default', label: 'Enviada' },
       accepted: { variant: 'default', label: 'Aceptada' },
       rejected: { variant: 'destructive', label: 'Rechazada' },
+      completed: { variant: 'default', label: 'Completada' },
       expired: { variant: 'outline', label: 'Expirada' },
     };
 

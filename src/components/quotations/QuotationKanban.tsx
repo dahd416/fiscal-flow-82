@@ -39,6 +39,7 @@ const statusColumns = [
   { key: 'sent', label: 'Enviada', color: 'bg-blue-500/10 border-blue-500' },
   { key: 'accepted', label: 'Aceptada', color: 'bg-green-500/10 border-green-500' },
   { key: 'rejected', label: 'Rechazada', color: 'bg-destructive/10 border-destructive' },
+  { key: 'completed', label: 'Completada', color: 'bg-purple-500/10 border-purple-500' },
   { key: 'expired', label: 'Expirada', color: 'bg-muted/20 border-muted' },
 ];
 
@@ -89,7 +90,7 @@ export function QuotationKanban({ quotations, onEdit, onDelete, onManageItems, o
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
       {statusColumns.map((column) => {
         const columnQuotations = getQuotationsByStatus(column.key);
         const isOver = draggedOver === column.key;
