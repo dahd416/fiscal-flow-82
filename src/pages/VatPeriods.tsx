@@ -1,222 +1,299 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Plus, Calendar } from 'lucide-react';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
+import { supabase } from '@/integrations/supabase/client';
+import { CalendarView } from '@/components/calendar/CalendarView';
+import { EventsList } from '@/components/calendar/EventsList';
+import { EventDialog } from '@/components/calendar/EventDialog';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { Plus, Users } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
-interface VatPeriod {
+interface CalendarEvent {
   id: string;
-  period_start: string;
-  period_end: string;
-  total_income: number;
-  total_vat: number;
-  payment_due_date: string | null;
-  status: 'pending' | 'paid' | 'overdue';
+  user_id: string;
+  title: string;
+  description: string | null;
+  event_date: string;
+  event_time: string | null;
+  event_type: string;
+  priority: string;
+  is_completed: boolean;
+  is_admin_created: boolean;
+  created_by: string | null;
+}
+
+interface UserProfile {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string;
 }
 
 export default function VatPeriods() {
   const { user } = useAuth();
-  const [periods, setPeriods] = useState<VatPeriod[]>([]);
-  const [open, setOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    period_start: '',
-    period_end: '',
-    payment_due_date: '',
-    status: 'pending',
-  });
+  const { isAdmin } = useIsAdmin();
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [deleteEventId, setDeleteEventId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const fetchPeriods = async () => {
-    const { data } = await supabase
-      .from('vat_periods')
-      .select('*')
-      .order('period_start', { ascending: false });
-    if (data) setPeriods(data as VatPeriod[]);
-  };
+  // Admin specific states
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
 
   useEffect(() => {
-    if (user) fetchPeriods();
-  }, [user]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const { data: transactions } = await supabase
-      .from('transactions')
-      .select('amount, vat_amount')
-      .gte('transaction_date', formData.period_start)
-      .lte('transaction_date', formData.period_end)
-      .eq('type', 'income');
-
-    const totalIncome = transactions?.reduce((sum, t) => sum + Number(t.amount), 0) || 0;
-    const totalVat = transactions?.reduce((sum, t) => sum + Number(t.vat_amount), 0) || 0;
-
-    const { error } = await supabase.from('vat_periods').insert([
-      {
-        user_id: user!.id,
-        period_start: formData.period_start,
-        period_end: formData.period_end,
-        total_income: totalIncome,
-        total_vat: totalVat,
-        payment_due_date: formData.payment_due_date || null,
-        status: formData.status,
+    if (user) {
+      if (isAdmin) {
+        loadUsers();
+      } else {
+        setSelectedUserId(user.id);
+        loadEvents(user.id);
       }
-    ]);
+    }
+  }, [user, isAdmin]);
 
-    if (error) {
-      toast.error('Error al crear período de IVA');
-    } else {
-      toast.success('Período de IVA creado exitosamente');
-      setOpen(false);
-      setFormData({ period_start: '', period_end: '', payment_due_date: '', status: 'pending' });
-      fetchPeriods();
+  useEffect(() => {
+    if (selectedUserId) {
+      loadEvents(selectedUserId);
+    }
+  }, [selectedUserId]);
+
+  const loadUsers = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-get-users');
+      if (error) throw error;
+      if (data?.users) {
+        setUsers(data.users);
+        if (data.users.length > 0) {
+          setSelectedUserId(data.users[0].id);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error loading users:', error);
+      toast.error('Error al cargar usuarios');
     }
   };
 
-  const updateStatus = async (id: string, status: string) => {
-    const { error } = await supabase
-      .from('vat_periods')
-      .update({ status })
-      .eq('id', id);
+  const loadEvents = async (userId: string) => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('calendar_events')
+        .select('*')
+        .eq('user_id', userId)
+        .order('event_date', { ascending: true });
 
-    if (error) {
-      toast.error('Error al actualizar estado');
-    } else {
-      toast.success('Estado actualizado');
-      fetchPeriods();
+      if (error) throw error;
+      setEvents(data || []);
+    } catch (error: any) {
+      console.error('Error loading events:', error);
+      toast.error('Error al cargar eventos');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'paid': return 'bg-green-500';
-      case 'overdue': return 'bg-red-500';
-      default: return 'bg-yellow-500';
+  const handleSaveEvent = async (eventData: Partial<CalendarEvent>) => {
+    try {
+      if (!eventData.title || !eventData.event_date || !eventData.event_type) {
+        toast.error('Por favor completa todos los campos requeridos');
+        return;
+      }
+
+      const dataToSave = {
+        title: eventData.title,
+        description: eventData.description || null,
+        event_date: eventData.event_date,
+        event_time: eventData.event_time || null,
+        event_type: eventData.event_type,
+        priority: eventData.priority || 'medium',
+        user_id: selectedUserId,
+        created_by: user!.id,
+        is_admin_created: isAdmin && selectedUserId !== user!.id,
+      };
+
+      if (editingEvent) {
+        const { error } = await supabase
+          .from('calendar_events')
+          .update(dataToSave)
+          .eq('id', editingEvent.id);
+
+        if (error) throw error;
+        toast.success('Evento actualizado');
+      } else {
+        const { error } = await supabase.from('calendar_events').insert([dataToSave]);
+
+        if (error) throw error;
+        toast.success('Evento creado');
+      }
+
+      loadEvents(selectedUserId);
+      setEditingEvent(null);
+    } catch (error: any) {
+      console.error('Error saving event:', error);
+      toast.error('Error al guardar evento');
+      throw error;
     }
   };
+
+  const handleToggleComplete = async (eventId: string, isCompleted: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('calendar_events')
+        .update({ is_completed: isCompleted })
+        .eq('id', eventId);
+
+      if (error) throw error;
+      loadEvents(selectedUserId);
+    } catch (error: any) {
+      console.error('Error toggling event:', error);
+      toast.error('Error al actualizar evento');
+    }
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!deleteEventId) return;
+
+    try {
+      const { error } = await supabase
+        .from('calendar_events')
+        .delete()
+        .eq('id', deleteEventId);
+
+      if (error) throw error;
+      toast.success('Evento eliminado');
+      loadEvents(selectedUserId);
+      setDeleteEventId(null);
+    } catch (error: any) {
+      console.error('Error deleting event:', error);
+      toast.error('Error al eliminar evento');
+    }
+  };
+
+  const filteredEvents = events.filter((event) => {
+    const eventDate = new Date(event.event_date);
+    return (
+      eventDate.getDate() === selectedDate.getDate() &&
+      eventDate.getMonth() === selectedDate.getMonth() &&
+      eventDate.getFullYear() === selectedDate.getFullYear()
+    );
+  });
+
+  const selectedUserName = users.find((u) => u.id === selectedUserId);
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Períodos de IVA</h2>
-            <p className="text-muted-foreground">Gestiona períodos de declaración y pagos de IVA</p>
+            <h2 className="text-3xl font-bold tracking-tight">
+              {isAdmin ? 'Gestión de Calendarios' : 'Mi Calendario'}
+            </h2>
+            <p className="text-muted-foreground">
+              {isAdmin
+                ? 'Administra eventos y recordatorios de usuarios'
+                : 'Gestiona tus eventos y recordatorios de IVA'}
+            </p>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Crear Período
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Crear Período de IVA</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="period_start">Inicio del Período *</Label>
-                  <Input
-                    id="period_start"
-                    type="date"
-                    value={formData.period_start}
-                    onChange={(e) => setFormData({ ...formData, period_start: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="period_end">Fin del Período *</Label>
-                  <Input
-                    id="period_end"
-                    type="date"
-                    value={formData.period_end}
-                    onChange={(e) => setFormData({ ...formData, period_end: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="payment_due_date">Fecha de Vencimiento de Pago</Label>
-                  <Input
-                    id="payment_due_date"
-                    type="date"
-                    value={formData.payment_due_date}
-                    onChange={(e) => setFormData({ ...formData, payment_due_date: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Estado</Label>
-                  <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pendiente</SelectItem>
-                      <SelectItem value="paid">Pagado</SelectItem>
-                      <SelectItem value="overdue">Vencido</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button type="submit" className="w-full">Crear Período</Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <div className="flex gap-2">
+            {isAdmin && users.length > 0 && (
+              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                <SelectTrigger className="w-[250px]">
+                  <Users className="h-4 w-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.first_name && user.last_name
+                        ? `${user.first_name} ${user.last_name}`
+                        : user.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <Button onClick={() => setDialogOpen(true)} className="gap-2 hover-scale">
+              <Plus className="h-4 w-4" />
+              Nuevo Evento
+            </Button>
+          </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {periods.map((period) => (
-            <Card key={period.id}>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    Período
-                  </div>
-                  <Badge className={getStatusColor(period.status)}>
-                    {period.status === 'pending' ? 'Pendiente' : period.status === 'paid' ? 'Pagado' : 'Vencido'}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="text-sm">
-                  <span className="font-medium">Período:</span>{' '}
-                  {new Date(period.period_start).toLocaleDateString()} -{' '}
-                  {new Date(period.period_end).toLocaleDateString()}
-                </div>
-                <div className="text-sm">
-                  <span className="font-medium">Ingresos Totales:</span> €{period.total_income.toFixed(2)}
-                </div>
-                <div className="text-sm">
-                  <span className="font-medium">IVA Total:</span> €{period.total_vat.toFixed(2)}
-                </div>
-                {period.payment_due_date && (
-                  <div className="text-sm">
-                    <span className="font-medium">Vencimiento:</span>{' '}
-                    {new Date(period.payment_due_date).toLocaleDateString()}
-                  </div>
-                )}
-                <div className="flex gap-2 pt-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => updateStatus(period.id, 'paid')}
-                    disabled={period.status === 'paid'}
-                  >
-                    Marcar como Pagado
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        {isAdmin && selectedUserName && (
+          <Card className="p-4 bg-primary/5 border-primary/20 animate-fade-in">
+            <p className="text-sm">
+              <span className="font-semibold">Viendo calendario de:</span>{' '}
+              {selectedUserName.first_name && selectedUserName.last_name
+                ? `${selectedUserName.first_name} ${selectedUserName.last_name}`
+                : selectedUserName.email}
+            </p>
+          </Card>
+        )}
+
+        <div className="grid gap-6 lg:grid-cols-[1fr,400px]">
+          <CalendarView
+            events={events}
+            onDateSelect={setSelectedDate}
+            selectedDate={selectedDate}
+          />
+          <EventsList
+            events={filteredEvents}
+            selectedDate={selectedDate}
+            onToggleComplete={handleToggleComplete}
+            onEdit={(event) => {
+              setEditingEvent(event as CalendarEvent);
+              setDialogOpen(true);
+            }}
+            onDelete={setDeleteEventId}
+            isAdmin={isAdmin}
+          />
         </div>
       </div>
+
+      <EventDialog
+        open={dialogOpen}
+        onClose={() => {
+          setDialogOpen(false);
+          setEditingEvent(null);
+        }}
+        onSave={handleSaveEvent}
+        event={editingEvent}
+        defaultDate={selectedDate}
+        isAdminCreating={isAdmin && selectedUserId !== user?.id}
+        selectedUserId={selectedUserId}
+      />
+
+      <AlertDialog open={!!deleteEventId} onOpenChange={() => setDeleteEventId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar evento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El evento será eliminado permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteEvent}>Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Layout>
   );
 }
