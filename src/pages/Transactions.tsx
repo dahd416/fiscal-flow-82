@@ -36,7 +36,7 @@ export default function Transactions() {
   const [formData, setFormData] = useState({
     type: 'income',
     amount: '',
-    vat_rate: '21',
+    vat_rate: '16',
     description: '',
     category: '',
     transaction_date: new Date().toISOString().split('T')[0],
@@ -88,7 +88,7 @@ export default function Transactions() {
       setFormData({
         type: 'income',
         amount: '',
-        vat_rate: '21',
+        vat_rate: '16',
         description: '',
         category: '',
         transaction_date: new Date().toISOString().split('T')[0],
@@ -132,7 +132,7 @@ export default function Transactions() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="amount">Monto (€) *</Label>
+                  <Label htmlFor="amount">Monto ($) *</Label>
                   <Input
                     id="amount"
                     type="number"
