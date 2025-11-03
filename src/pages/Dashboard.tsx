@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { DollarSign, Users, Receipt, TrendingUp, TrendingDown, Wallet, CreditCard, AlertCircle, PiggyBank, FileText, Shield } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency, formatPercentage } from '@/lib/currency';
 
@@ -16,6 +16,10 @@ export default function Dashboard() {
     saldoInicial: 0,
     ingresos: 0,
     egresos: 0,
+    ingresosSubtotal: 0,
+    egresosSubtotal: 0,
+    ingresosIVA: 0,
+    egresosIVA: 0,
     utilidadAntesImpuestos: 0,
     resguardoImpuestos: 0,
     impuestosAPagar: 0,
@@ -41,13 +45,29 @@ export default function Dashboard() {
 
       const transactions = transactionsRes.data || [];
       
-      // Calcular Ingresos y Egresos
+      // Calcular Ingresos y Egresos (subtotal + IVA = amount)
       const ingresos = transactions
         .filter(t => t.type === 'income')
         .reduce((sum, t) => sum + Number(t.amount), 0);
       const egresos = transactions
         .filter(t => t.type === 'expense')
         .reduce((sum, t) => sum + Number(t.amount), 0);
+      
+      // Calcular subtotales (sin IVA)
+      const ingresosSubtotal = transactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + Number(t.subtotal || 0), 0);
+      const egresosSubtotal = transactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + Number(t.subtotal || 0), 0);
+      
+      // Calcular IVA
+      const ingresosIVA = transactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + Number(t.vat_amount || 0), 0);
+      const egresosIVA = transactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + Number(t.vat_amount || 0), 0);
       
       // Saldo Inicial (por ahora en 0, se puede configurar después)
       const saldoInicial = 0;
@@ -86,6 +106,10 @@ export default function Dashboard() {
         saldoInicial,
         ingresos,
         egresos,
+        ingresosSubtotal,
+        egresosSubtotal,
+        ingresosIVA,
+        egresosIVA,
         utilidadAntesImpuestos,
         resguardoImpuestos,
         impuestosAPagar,
@@ -107,13 +131,13 @@ export default function Dashboard() {
   const chartData = [
     {
       name: 'Ingresos',
-      valor: stats.ingresos,
-      fill: 'hsl(var(--success))',
+      subtotal: stats.ingresosSubtotal,
+      iva: stats.ingresosIVA,
     },
     {
       name: 'Egresos',
-      valor: stats.egresos,
-      fill: 'hsl(var(--destructive))',
+      subtotal: stats.egresosSubtotal,
+      iva: stats.egresosIVA,
     },
   ];
 
@@ -276,7 +300,7 @@ export default function Dashboard() {
         <Card>
           <CardHeader>
             <CardTitle>Comparación Ingresos vs Egresos</CardTitle>
-            <CardDescription>Visualización de tus flujos financieros</CardDescription>
+            <CardDescription>Visualización de tus flujos financieros (Subtotal + IVA)</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -293,7 +317,32 @@ export default function Dashboard() {
                   formatter={(value: number) => formatCurrency(value)}
                 />
                 <Legend />
-                <Bar dataKey="valor" fill="currentColor" radius={[8, 8, 0, 0]} />
+                <Bar 
+                  dataKey="subtotal" 
+                  stackId="stack" 
+                  name="Subtotal"
+                  radius={[0, 0, 0, 0]}
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`}
+                      fill={entry.name === 'Ingresos' ? 'hsl(142.1 76.2% 36.3%)' : 'hsl(0 84.2% 60.2%)'}
+                    />
+                  ))}
+                </Bar>
+                <Bar 
+                  dataKey="iva" 
+                  stackId="stack" 
+                  name="IVA"
+                  radius={[8, 8, 0, 0]}
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell 
+                      key={`cell-iva-${index}`}
+                      fill={entry.name === 'Ingresos' ? 'hsl(142.1 70% 65%)' : 'hsl(350 89% 77%)'}
+                    />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

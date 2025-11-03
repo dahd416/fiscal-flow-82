@@ -312,8 +312,9 @@ export function GlobalActivityPanel() {
                           <TableHead className="w-[90px]">Tipo</TableHead>
                           <TableHead className="min-w-[200px]">Concepto</TableHead>
                           <TableHead className="w-[150px]">Cliente</TableHead>
-                          <TableHead className="text-right w-[110px]">Monto</TableHead>
+                          <TableHead className="text-right w-[110px]">Subtotal</TableHead>
                           <TableHead className="text-right w-[90px]">IVA</TableHead>
+                          <TableHead className="text-right w-[110px]">Total</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -375,6 +376,11 @@ export function GlobalActivityPanel() {
                               </TableCell>
                               <TableCell className="text-right text-muted-foreground whitespace-nowrap">
                                 {formatCurrency(transaction.vat_amount)}
+                              </TableCell>
+                              <TableCell className="text-right font-bold whitespace-nowrap">
+                                <span className={transaction.type === 'income' ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}>
+                                  {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                                </span>
                               </TableCell>
                               <TableCell className="text-right font-bold whitespace-nowrap">
                                 <span className={transaction.type === 'income' ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}>
