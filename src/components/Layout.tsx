@@ -27,7 +27,12 @@ export function Layout({ children }: LayoutProps) {
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-8">
-              <h1 className="text-xl font-bold">Control Financiero</h1>
+              <div>
+                <h1 className="text-xl font-bold">Control Financiero</h1>
+                {isAdmin && (
+                  <p className="text-xs text-muted-foreground">Modo: Mi Negocio</p>
+                )}
+              </div>
               <div className="hidden md:flex gap-1">
                 {navigation.map((item) => {
                   const Icon = item.icon;

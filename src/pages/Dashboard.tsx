@@ -3,11 +3,14 @@ import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { DollarSign, Users, Receipt, TrendingUp, TrendingDown, Wallet, CreditCard, AlertCircle, PiggyBank, FileText } from 'lucide-react';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
+import { DollarSign, Users, Receipt, TrendingUp, TrendingDown, Wallet, CreditCard, AlertCircle, PiggyBank, FileText, Shield } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { Badge } from '@/components/ui/badge';
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const [stats, setStats] = useState({
     saldoInicial: 0,
     ingresos: 0,
@@ -219,11 +222,24 @@ export default function Dashboard() {
   return (
     <Layout>
       <div className="space-y-8">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Panel de Control</h2>
-          <p className="text-muted-foreground">
-            Resumen completo de tus métricas financieras
-          </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-3">
+              <h2 className="text-3xl font-bold tracking-tight">Panel de Control</h2>
+              {isAdmin && (
+                <Badge variant="default" className="gap-1">
+                  <Shield className="h-3 w-3" />
+                  Admin
+                </Badge>
+              )}
+            </div>
+            <p className="text-muted-foreground mt-1">
+              {isAdmin 
+                ? 'Gestión financiera de tu negocio personal' 
+                : 'Resumen completo de tus métricas financieras'
+              }
+            </p>
+          </div>
         </div>
 
         {/* Tarjetas Principales Destacadas */}
