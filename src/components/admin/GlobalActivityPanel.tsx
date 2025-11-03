@@ -12,6 +12,7 @@ interface Transaction {
   id: string;
   type: 'income' | 'expense';
   amount: number;
+  subtotal: number;
   vat_amount: number;
   concept: string | null;
   folio: string | null;
@@ -367,13 +368,18 @@ export function GlobalActivityPanel() {
                                   <span className="text-muted-foreground text-sm">Sin cliente</span>
                                 )}
                               </TableCell>
-                              <TableCell className="text-right font-bold whitespace-nowrap">
+                              <TableCell className="text-right whitespace-nowrap">
                                 <span className={transaction.type === 'income' ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}>
-                                  {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                                  {formatCurrency(transaction.subtotal)}
                                 </span>
                               </TableCell>
                               <TableCell className="text-right text-muted-foreground whitespace-nowrap">
                                 {formatCurrency(transaction.vat_amount)}
+                              </TableCell>
+                              <TableCell className="text-right font-bold whitespace-nowrap">
+                                <span className={transaction.type === 'income' ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}>
+                                  {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                                </span>
                               </TableCell>
                             </TableRow>
                           );

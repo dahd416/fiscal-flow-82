@@ -329,6 +329,7 @@ export type Database = {
           is_invoice: boolean | null
           payment_method: string | null
           quotation_id: string | null
+          subtotal: number | null
           transaction_date: string
           type: string
           updated_at: string | null
@@ -346,6 +347,7 @@ export type Database = {
           is_invoice?: boolean | null
           payment_method?: string | null
           quotation_id?: string | null
+          subtotal?: number | null
           transaction_date: string
           type: string
           updated_at?: string | null
@@ -363,6 +365,7 @@ export type Database = {
           is_invoice?: boolean | null
           payment_method?: string | null
           quotation_id?: string | null
+          subtotal?: number | null
           transaction_date?: string
           type?: string
           updated_at?: string | null

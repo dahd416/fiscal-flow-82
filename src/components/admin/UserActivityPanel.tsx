@@ -16,9 +16,10 @@ interface Transaction {
   id: string;
   type: 'income' | 'expense';
   amount: number;
+  subtotal: number;
   vat_amount: number;
-  description: string | null;
-  category: string | null;
+  concept: string | null;
+  clients: { first_name: string; last_name: string | null } | null;
   transaction_date: string;
   quotations: { quotation_number: string; title: string } | null;
 }
@@ -26,13 +27,6 @@ interface Transaction {
 interface UserActivityPanelProps {
   userId: string;
   userName: string;
-}
-
-interface CategoryStat {
-  category: string;
-  amount: number;
-  count: number;
-  percentage: number;
 }
 
 interface MonthStat {
@@ -56,8 +50,6 @@ export function UserActivityPanel({ userId, userName }: UserActivityPanelProps) 
     avgIncome: 0,
     avgExpense: 0,
   });
-  const [categoriesIncome, setCategoriesIncome] = useState<CategoryStat[]>([]);
-  const [categoriesExpense, setCategoriesExpense] = useState<CategoryStat[]>([]);
   const [monthlyData, setMonthlyData] = useState<MonthStat[]>([]);
 
   useEffect(() => {
@@ -66,7 +58,6 @@ export function UserActivityPanel({ userId, userName }: UserActivityPanelProps) 
 
   useEffect(() => {
     calculateStats();
-    calculateCategoryStats();
     calculateMonthlyStats();
   }, [transactions, typeFilter, startDate, endDate]);
 
@@ -123,49 +114,6 @@ export function UserActivityPanel({ userId, userName }: UserActivityPanelProps) 
       avgIncome: incomeTransactions.length > 0 ? income / incomeTransactions.length : 0,
       avgExpense: expenseTransactions.length > 0 ? expense / expenseTransactions.length : 0,
     });
-  };
-
-  const calculateCategoryStats = () => {
-    const filtered = getFilteredTransactions();
-    
-    const incomeByCategory = new Map<string, { amount: number; count: number }>();
-    const expenseByCategory = new Map<string, { amount: number; count: number }>();
-    
-    let totalIncome = 0;
-    let totalExpense = 0;
-
-    filtered.forEach(t => {
-      const category = t.category || 'Sin categoría';
-      
-      if (t.type === 'income') {
-        totalIncome += t.amount;
-        const current = incomeByCategory.get(category) || { amount: 0, count: 0 };
-        incomeByCategory.set(category, {
-          amount: current.amount + t.amount,
-          count: current.count + 1
-        });
-      } else {
-        totalExpense += t.amount;
-        const current = expenseByCategory.get(category) || { amount: 0, count: 0 };
-        expenseByCategory.set(category, {
-          amount: current.amount + t.amount,
-          count: current.count + 1
-        });
-      }
-    });
-
-    const mapToStats = (map: Map<string, { amount: number; count: number }>, total: number): CategoryStat[] =>
-      Array.from(map.entries())
-        .map(([category, data]) => ({
-          category,
-          amount: data.amount,
-          count: data.count,
-          percentage: total > 0 ? (data.amount / total) * 100 : 0
-        }))
-        .sort((a, b) => b.amount - a.amount);
-
-    setCategoriesIncome(mapToStats(incomeByCategory, totalIncome));
-    setCategoriesExpense(mapToStats(expenseByCategory, totalExpense));
   };
 
   const calculateMonthlyStats = () => {
@@ -380,14 +328,10 @@ export function UserActivityPanel({ userId, userName }: UserActivityPanelProps) 
 
       {/* Tabs for different views */}
       <Tabs defaultValue="transactions" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="transactions" className="gap-2">
             <FileText className="h-4 w-4" />
             Transacciones
-          </TabsTrigger>
-          <TabsTrigger value="categories" className="gap-2">
-            <PieChart className="h-4 w-4" />
-            Por Categoría
           </TabsTrigger>
           <TabsTrigger value="monthly" className="gap-2">
             <BarChart3 className="h-4 w-4" />
@@ -421,11 +365,12 @@ export function UserActivityPanel({ userId, userName }: UserActivityPanelProps) 
                         <TableRow>
                           <TableHead className="w-[120px]">Fecha</TableHead>
                           <TableHead className="w-[100px]">Tipo</TableHead>
-                          <TableHead>Descripción</TableHead>
-                          <TableHead className="w-[140px]">Categoría</TableHead>
+                          <TableHead>Cliente</TableHead>
+                          <TableHead>Concepto</TableHead>
                           <TableHead className="w-[180px]">Cotización</TableHead>
-                          <TableHead className="text-right w-[120px]">Monto</TableHead>
+                          <TableHead className="text-right w-[120px]">Subtotal</TableHead>
                           <TableHead className="text-right w-[100px]">IVA</TableHead>
+                          <TableHead className="text-right w-[120px]">Total</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -452,18 +397,22 @@ export function UserActivityPanel({ userId, userName }: UserActivityPanelProps) 
                               )}
                             </TableCell>
                             <TableCell className="max-w-[200px]">
-                              <div className="truncate" title={transaction.description || ''}>
-                                {transaction.description || (
-                                  <span className="text-muted-foreground italic">Sin descripción</span>
+                              {transaction.clients ? (
+                                <div className="truncate font-medium">
+                                  {[transaction.clients.first_name, transaction.clients.last_name]
+                                    .filter(Boolean)
+                                    .join(' ')}
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground text-sm">Sin cliente</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="max-w-[200px]">
+                              <div className="truncate" title={transaction.concept || ''}>
+                                {transaction.concept || (
+                                  <span className="text-muted-foreground italic">Sin concepto</span>
                                 )}
                               </div>
-                            </TableCell>
-                            <TableCell>
-                              {transaction.category ? (
-                                <Badge variant="outline" className="whitespace-nowrap">{transaction.category}</Badge>
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
                             </TableCell>
                             <TableCell>
                               {transaction.quotations ? (
@@ -477,13 +426,18 @@ export function UserActivityPanel({ userId, userName }: UserActivityPanelProps) 
                                 <span className="text-muted-foreground">-</span>
                               )}
                             </TableCell>
-                            <TableCell className="text-right font-bold whitespace-nowrap">
+                            <TableCell className="text-right whitespace-nowrap">
                               <span className={transaction.type === 'income' ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}>
-                                {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                                {formatCurrency(transaction.subtotal)}
                               </span>
                             </TableCell>
                             <TableCell className="text-right text-muted-foreground whitespace-nowrap">
                               {formatCurrency(transaction.vat_amount)}
+                            </TableCell>
+                            <TableCell className="text-right font-bold whitespace-nowrap">
+                              <span className={transaction.type === 'income' ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}>
+                                {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                              </span>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -494,93 +448,6 @@ export function UserActivityPanel({ userId, userName }: UserActivityPanelProps) 
               )}
             </CardContent>
           </Card>
-        </TabsContent>
-
-        {/* Categories Tab */}
-        <TabsContent value="categories">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader className="bg-green-50 dark:bg-green-950/20">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-green-600" />
-                  Ingresos por Categoría
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6">
-                {categoriesIncome.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p>No hay datos de ingresos</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {categoriesIncome.map((cat, idx) => (
-                      <div key={idx} className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium">{cat.category}</span>
-                          <span className="text-muted-foreground">{cat.count} trans.</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
-                            <div 
-                              className="h-full bg-green-500 transition-all"
-                              style={{ width: `${cat.percentage}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-semibold text-green-700 dark:text-green-400 min-w-[100px] text-right">
-                            {formatCurrency(cat.amount)}
-                          </span>
-                        </div>
-                        <div className="text-xs text-muted-foreground text-right">
-                          {cat.percentage.toFixed(1)}% del total
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="bg-red-50 dark:bg-red-950/20">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <TrendingDown className="h-5 w-5 text-red-600" />
-                  Egresos por Categoría
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6">
-                {categoriesExpense.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p>No hay datos de egresos</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {categoriesExpense.map((cat, idx) => (
-                      <div key={idx} className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium">{cat.category}</span>
-                          <span className="text-muted-foreground">{cat.count} trans.</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
-                            <div 
-                              className="h-full bg-red-500 transition-all"
-                              style={{ width: `${cat.percentage}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-semibold text-red-700 dark:text-red-400 min-w-[100px] text-right">
-                            {formatCurrency(cat.amount)}
-                          </span>
-                        </div>
-                        <div className="text-xs text-muted-foreground text-right">
-                          {cat.percentage.toFixed(1)}% del total
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
         </TabsContent>
 
         {/* Monthly Tab */}

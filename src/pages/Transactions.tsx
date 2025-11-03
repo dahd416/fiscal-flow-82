@@ -16,6 +16,7 @@ interface Transaction {
   id: string;
   type: 'income' | 'expense';
   amount: number;
+  subtotal: number;
   vat_rate: number;
   vat_amount: number;
   concept: string | null;
@@ -71,12 +72,12 @@ export default function Transactions() {
         ? (selectedQuotation.vat_amount / selectedQuotation.subtotal * 100).toFixed(2)
         : '16';
       
-      // Auto-fill fields from quotation
+      // Auto-fill fields from quotation - usar subtotal, no total
       setFormData({
         ...formData,
         quotation_id: quotationId,
         folio: `NV-${selectedQuotation.quotation_number}`, // Convertir a nota de venta
-        amount: selectedQuotation.total_amount.toString(),
+        amount: selectedQuotation.subtotal.toString(), // Usar subtotal
         vat_rate: vatRate,
       });
     } else {
@@ -96,15 +97,18 @@ export default function Transactions() {
       return;
     }
     
-    const amount = parseFloat(formData.amount);
+    // El amount ingresado es el SUBTOTAL (sin IVA)
+    const subtotal = parseFloat(formData.amount);
     const vatRate = parseFloat(formData.vat_rate);
-    const vatAmount = (amount * vatRate) / 100;
+    const vatAmount = (subtotal * vatRate) / 100;
+    const total = subtotal + vatAmount;
 
     const { error } = await supabase.from('transactions').insert([
       {
         user_id: user!.id,
         type: formData.type,
-        amount,
+        subtotal,
+        amount: total, // El total incluyendo IVA
         vat_rate: vatRate,
         vat_amount: vatAmount,
         concept: formData.concept || null,
@@ -206,7 +210,7 @@ export default function Transactions() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="amount">Monto ($) *</Label>
+                  <Label htmlFor="amount">Subtotal (sin IVA) *</Label>
                   <Input
                     id="amount"
                     type="number"
@@ -215,6 +219,9 @@ export default function Transactions() {
                     onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                     required
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Ingresa el monto sin IVA. El IVA se calculará automáticamente.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -312,8 +319,9 @@ export default function Transactions() {
                 <TableHead>Concepto</TableHead>
                 <TableHead>Forma de Pago</TableHead>
                 <TableHead>Factura</TableHead>
-                <TableHead className="text-right">Monto</TableHead>
+                <TableHead className="text-right">Subtotal</TableHead>
                 <TableHead className="text-right">IVA</TableHead>
+                <TableHead className="text-right">Total</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -366,11 +374,14 @@ export default function Transactions() {
                       <span className="text-xs bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 px-2 py-1 rounded">No</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {formatCurrency(transaction.amount)}
+                  <TableCell className="text-right">
+                    {formatCurrency(transaction.subtotal)}
                   </TableCell>
                   <TableCell className="text-right">
                     {formatCurrency(transaction.vat_amount)}
+                  </TableCell>
+                  <TableCell className="text-right font-medium">
+                    {formatCurrency(transaction.amount)}
                   </TableCell>
                 </TableRow>
               ))}
