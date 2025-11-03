@@ -63,9 +63,27 @@ export default function Profile() {
       const file = event.target.files?.[0];
       if (!file || !user?.id) return;
 
+      // Validar tipo de archivo
+      if (!file.type.startsWith('image/')) {
+        toast.error('Por favor selecciona una imagen válida');
+        return;
+      }
+
+      // Validar tamaño (máximo 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('La imagen no debe superar 5MB');
+        return;
+      }
+
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const fileName = `avatar.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      // Eliminar avatar anterior si existe
+      if (profile?.avatar_url) {
+        const oldPath = profile.avatar_url.split('/').slice(-2).join('/');
+        await supabase.storage.from('avatars').remove([oldPath]);
+      }
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
@@ -80,8 +98,8 @@ export default function Profile() {
       await updateProfileMutation.mutateAsync({ avatar_url: publicUrl });
       
       toast.success('Foto de perfil actualizada');
-    } catch (error) {
-      toast.error('Error al subir la foto');
+    } catch (error: any) {
+      toast.error(error.message || 'Error al subir la foto');
       console.error(error);
     } finally {
       setUploading(false);
