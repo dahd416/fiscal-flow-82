@@ -13,8 +13,10 @@ interface Transaction {
   type: 'income' | 'expense';
   amount: number;
   vat_amount: number;
-  description: string | null;
-  category: string | null;
+  concept: string | null;
+  folio: string | null;
+  payment_method: string | null;
+  is_invoice: boolean;
   transaction_date: string;
   user_id: string;
   profiles: {
@@ -307,9 +309,8 @@ export function GlobalActivityPanel() {
                           <TableHead className="w-[110px]">Fecha</TableHead>
                           <TableHead className="w-[160px]">Usuario</TableHead>
                           <TableHead className="w-[90px]">Tipo</TableHead>
-                          <TableHead className="min-w-[200px]">Descripción</TableHead>
+                          <TableHead className="min-w-[200px]">Concepto</TableHead>
                           <TableHead className="w-[150px]">Cliente</TableHead>
-                          <TableHead className="w-[130px]">Categoría</TableHead>
                           <TableHead className="text-right w-[110px]">Monto</TableHead>
                           <TableHead className="text-right w-[90px]">IVA</TableHead>
                         </TableRow>
@@ -349,9 +350,9 @@ export function GlobalActivityPanel() {
                                 )}
                               </TableCell>
                               <TableCell className="max-w-[200px]">
-                                <div className="truncate" title={transaction.description || ''}>
-                                  {transaction.description || (
-                                    <span className="text-muted-foreground italic">Sin descripción</span>
+                                <div className="truncate" title={transaction.concept || ''}>
+                                  {transaction.concept || (
+                                    <span className="text-muted-foreground italic">Sin concepto</span>
                                   )}
                                 </div>
                               </TableCell>
@@ -364,13 +365,6 @@ export function GlobalActivityPanel() {
                                   </div>
                                 ) : (
                                   <span className="text-muted-foreground text-sm">Sin cliente</span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {transaction.category ? (
-                                  <Badge variant="outline" className="whitespace-nowrap">{transaction.category}</Badge>
-                                ) : (
-                                  <span className="text-muted-foreground">-</span>
                                 )}
                               </TableCell>
                               <TableCell className="text-right font-bold whitespace-nowrap">

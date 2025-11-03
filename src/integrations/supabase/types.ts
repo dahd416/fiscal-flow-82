@@ -321,11 +321,13 @@ export type Database = {
       transactions: {
         Row: {
           amount: number
-          category: string | null
           client_id: string | null
+          concept: string | null
           created_at: string | null
-          description: string | null
+          folio: string | null
           id: string
+          is_invoice: boolean | null
+          payment_method: string | null
           quotation_id: string | null
           transaction_date: string
           type: string
@@ -336,11 +338,13 @@ export type Database = {
         }
         Insert: {
           amount: number
-          category?: string | null
           client_id?: string | null
+          concept?: string | null
           created_at?: string | null
-          description?: string | null
+          folio?: string | null
           id?: string
+          is_invoice?: boolean | null
+          payment_method?: string | null
           quotation_id?: string | null
           transaction_date: string
           type: string
@@ -351,11 +355,13 @@ export type Database = {
         }
         Update: {
           amount?: number
-          category?: string | null
           client_id?: string | null
+          concept?: string | null
           created_at?: string | null
-          description?: string | null
+          folio?: string | null
           id?: string
+          is_invoice?: boolean | null
+          payment_method?: string | null
           quotation_id?: string | null
           transaction_date?: string
           type?: string
