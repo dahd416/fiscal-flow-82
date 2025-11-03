@@ -315,10 +315,10 @@ export default function AdminUsers() {
             <div>
               <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
                 <Users className="h-8 w-8" />
-                Gestión de Usuarios
+                Plataforma
               </h2>
               <p className="text-muted-foreground mt-1">
-                Administra usuarios y monitorea su actividad financiera
+                Gestión de usuarios, actividad financiera y personalización
               </p>
             </div>
             <Link to="/invite-user">

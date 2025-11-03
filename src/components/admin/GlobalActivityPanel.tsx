@@ -3,10 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/currency';
-import { TrendingUp, TrendingDown, ArrowUpDown, Users, DollarSign, Activity, User, FileText } from 'lucide-react';
+import { TrendingUp, TrendingDown, Users, DollarSign, Activity, User } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Transaction {
@@ -29,15 +28,6 @@ interface Transaction {
   quotations: { quotation_number: string; title: string } | null;
 }
 
-interface UserStats {
-  user_id: string;
-  userName: string;
-  totalIncome: number;
-  totalExpense: number;
-  balance: number;
-  transactionCount: number;
-}
-
 export function GlobalActivityPanel() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,8 +40,6 @@ export function GlobalActivityPanel() {
     totalUsers: 0,
     totalTransactions: 0,
   });
-  const [userStats, setUserStats] = useState<UserStats[]>([]);
-  const [uniqueUsers, setUniqueUsers] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
     loadAllActivity();
@@ -148,38 +136,6 @@ export function GlobalActivityPanel() {
       totalUsers: allUsers.length,
       totalTransactions: filtered.length,
     });
-
-    // Calculate per-user stats
-    const userStatsMap = new Map<string, UserStats>();
-    
-    transactions.forEach(t => {
-      const userName = t.profiles 
-        ? [t.profiles.first_name, t.profiles.last_name].filter(Boolean).join(' ') || 'Sin nombre'
-        : 'Sin nombre';
-      
-      const current = userStatsMap.get(t.user_id) || {
-        user_id: t.user_id,
-        userName,
-        totalIncome: 0,
-        totalExpense: 0,
-        balance: 0,
-        transactionCount: 0,
-      };
-
-      if (t.type === 'income') {
-        current.totalIncome += t.amount;
-      } else {
-        current.totalExpense += t.amount;
-      }
-      
-      current.balance = current.totalIncome - current.totalExpense;
-      current.transactionCount += 1;
-      
-      userStatsMap.set(t.user_id, current);
-    });
-
-    const stats = Array.from(userStatsMap.values()).sort((a, b) => b.balance - a.balance);
-    setUserStats(stats);
   };
 
   const filteredTransactions = transactions.filter(t => {
@@ -327,21 +283,8 @@ export function GlobalActivityPanel() {
         </CardContent>
       </Card>
 
-      {/* Tabs */}
-      <Tabs defaultValue="transactions" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
-          <TabsTrigger value="transactions" className="gap-2">
-            <FileText className="h-4 w-4" />
-            Transacciones
-          </TabsTrigger>
-          <TabsTrigger value="users" className="gap-2">
-            <User className="h-4 w-4" />
-            Por Usuario
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Transactions Tab */}
-        <TabsContent value="transactions">
+      {/* Transactions */}
+      <div className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -448,72 +391,7 @@ export function GlobalActivityPanel() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
-
-        {/* Users Tab */}
-        <TabsContent value="users">
-          <Card>
-            <CardHeader>
-              <CardTitle>Resumen por Usuario</CardTitle>
-              <CardDescription>Balance y actividad de cada usuario</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {userStats.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No hay datos de usuarios</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {userStats.map((stat, idx) => (
-                    <Card key={stat.user_id} className={idx === 0 ? 'border-2 border-primary/50' : ''}>
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg flex items-center gap-2">
-                            <User className="h-5 w-5" />
-                            {stat.userName}
-                          </CardTitle>
-                          {idx === 0 && <Badge>Mayor Balance</Badge>}
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid gap-4 md:grid-cols-4">
-                          <div>
-                            <p className="text-xs text-muted-foreground">Ingresos</p>
-                            <p className="text-xl font-bold text-green-700 dark:text-green-400">
-                              {formatCurrency(stat.totalIncome)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Egresos</p>
-                            <p className="text-xl font-bold text-red-700 dark:text-red-400">
-                              {formatCurrency(stat.totalExpense)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Balance</p>
-                            <p className={`text-xl font-bold ${
-                              stat.balance >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
-                            }`}>
-                              {formatCurrency(stat.balance)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Transacciones</p>
-                            <p className="text-xl font-bold">
-                              {stat.transactionCount}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      </div>
     </div>
   );
 }
