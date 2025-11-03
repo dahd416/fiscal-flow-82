@@ -176,6 +176,112 @@ export type Database = {
         }
         Relationships: []
       }
+      quotation_items: {
+        Row: {
+          created_at: string | null
+          description: string
+          id: string
+          quantity: number
+          quotation_id: string
+          subtotal: number
+          total: number
+          unit_price: number
+          vat_amount: number
+          vat_rate: number
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          id?: string
+          quantity?: number
+          quotation_id: string
+          subtotal?: number
+          total?: number
+          unit_price?: number
+          vat_amount?: number
+          vat_rate?: number
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          id?: string
+          quantity?: number
+          quotation_id?: string
+          subtotal?: number
+          total?: number
+          unit_price?: number
+          vat_amount?: number
+          vat_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotation_items_quotation_id_fkey"
+            columns: ["quotation_id"]
+            isOneToOne: false
+            referencedRelation: "quotations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotations: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          notes: string | null
+          quotation_number: string
+          status: string
+          subtotal: number
+          title: string
+          total_amount: number
+          updated_at: string | null
+          user_id: string
+          valid_until: string | null
+          vat_amount: number
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          notes?: string | null
+          quotation_number: string
+          status?: string
+          subtotal?: number
+          title: string
+          total_amount?: number
+          updated_at?: string | null
+          user_id: string
+          valid_until?: string | null
+          vat_amount?: number
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          notes?: string | null
+          quotation_number?: string
+          status?: string
+          subtotal?: number
+          title?: string
+          total_amount?: number
+          updated_at?: string | null
+          user_id?: string
+          valid_until?: string | null
+          vat_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
@@ -324,6 +430,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_quotation_number: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

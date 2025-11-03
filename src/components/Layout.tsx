@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Receipt, Calendar, LogOut, UserCog } from 'lucide-react';
+import { LayoutDashboard, Users, Receipt, Calendar, FileText, LogOut, UserCog } from 'lucide-react';
 import { NotificationBell } from '@/components/NotificationBell';
 
 interface LayoutProps {
@@ -19,6 +19,7 @@ export function Layout({ children }: LayoutProps) {
     { name: 'Panel', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Clientes', href: '/clients', icon: Users },
     { name: 'Transacciones', href: '/transactions', icon: Receipt },
+    { name: 'Cotizaciones', href: '/quotations', icon: FileText },
     { name: 'Períodos IVA', href: '/vat-periods', icon: Calendar },
   ];
 
