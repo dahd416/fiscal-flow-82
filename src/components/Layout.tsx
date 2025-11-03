@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
+import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Users, Receipt, Calendar, FileText, LogOut, UserCog } from 'lucide-react';
@@ -17,6 +18,7 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const { signOut, user } = useAuth();
   const { isAdmin } = useIsAdmin();
+  const { platformSettings } = usePlatformSettings();
   const location = useLocation();
 
   const { data: profile } = useQuery({
@@ -55,11 +57,23 @@ export function Layout({ children }: LayoutProps) {
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-8">
               <Link to="/dashboard" className="flex items-center gap-2">
-                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold text-sm">CF</span>
+                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center overflow-hidden">
+                  {platformSettings?.logo_url ? (
+                    <img 
+                      src={platformSettings.logo_url} 
+                      alt="Logo" 
+                      className="h-full w-full object-contain p-1"
+                    />
+                  ) : (
+                    <span className="text-primary-foreground font-bold text-sm">
+                      {platformSettings?.platform_name?.substring(0, 2).toUpperCase() || 'CF'}
+                    </span>
+                  )}
                 </div>
                 <div className="hidden sm:block">
-                  <h1 className="text-lg font-bold">Control Financiero</h1>
+                  <h1 className="text-lg font-bold">
+                    {platformSettings?.platform_name || 'Control Financiero'}
+                  </h1>
                   {isAdmin && (
                     <p className="text-xs text-muted-foreground">Modo: Mi Negocio</p>
                   )}

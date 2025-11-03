@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EditUserDialog } from '@/components/admin/EditUserDialog';
 import { UserActivityPanel } from '@/components/admin/UserActivityPanel';
+import { PlatformCustomization } from '@/components/admin/PlatformCustomization';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -328,7 +329,7 @@ export default function AdminUsers() {
           </div>
 
           <Tabs defaultValue="users" className="space-y-6" value={selectedUser ? undefined : 'users'}>
-            <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsList className="grid w-full max-w-2xl grid-cols-3">
               <TabsTrigger value="users" className="gap-2">
                 <Users className="h-4 w-4" />
                 Lista de Usuarios
@@ -336,6 +337,10 @@ export default function AdminUsers() {
               <TabsTrigger value="activity" className="gap-2" disabled={!selectedUser}>
                 <Activity className="h-4 w-4" />
                 Actividad Financiera
+              </TabsTrigger>
+              <TabsTrigger value="customization" className="gap-2">
+                <Shield className="h-4 w-4" />
+                Personalización
               </TabsTrigger>
             </TabsList>
 
@@ -624,6 +629,10 @@ export default function AdminUsers() {
                   </CardContent>
                 </Card>
               )}
+            </TabsContent>
+
+            <TabsContent value="customization">
+              <PlatformCustomization />
             </TabsContent>
           </Tabs>
         </div>
