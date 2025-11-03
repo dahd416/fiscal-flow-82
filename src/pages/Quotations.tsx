@@ -38,7 +38,8 @@ interface Quotation {
   notes: string | null;
   created_at: string;
   clients?: {
-    name: string;
+    first_name: string;
+    last_name: string | null;
   };
 }
 
@@ -55,7 +56,8 @@ interface QuotationItem {
 
 interface Client {
   id: string;
-  name: string;
+  first_name: string;
+  last_name: string | null;
 }
 
 export default function Quotations() {
@@ -87,7 +89,8 @@ export default function Quotations() {
         .select(`
           *,
           clients (
-            name
+            first_name,
+            last_name
           )
         `)
         .order('created_at', { ascending: false });
@@ -106,8 +109,8 @@ export default function Quotations() {
     try {
       const { data, error } = await supabase
         .from('clients')
-        .select('id, name')
-        .order('name');
+        .select('id, first_name, last_name')
+        .order('first_name');
 
       if (error) throw error;
       setClients(data || []);
@@ -268,10 +271,13 @@ export default function Quotations() {
 
   const filteredQuotations = quotations.filter((quotation) => {
     const searchLower = searchQuery.toLowerCase();
+    const clientName = quotation.clients 
+      ? `${quotation.clients.first_name} ${quotation.clients.last_name || ''}`.toLowerCase()
+      : '';
     return (
       quotation.title.toLowerCase().includes(searchLower) ||
       quotation.quotation_number.toLowerCase().includes(searchLower) ||
-      quotation.clients?.name?.toLowerCase().includes(searchLower)
+      clientName.includes(searchLower)
     );
   });
 

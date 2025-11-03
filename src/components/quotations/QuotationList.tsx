@@ -27,7 +27,8 @@ interface Quotation {
   notes: string | null;
   created_at: string;
   clients?: {
-    name: string;
+    first_name: string;
+    last_name: string | null;
   };
 }
 
@@ -78,7 +79,9 @@ export function QuotationList({ quotations, onEdit, onDelete, onManageItems }: Q
               </TableCell>
               <TableCell className="font-medium">{quotation.title}</TableCell>
               <TableCell>
-                {quotation.clients?.name || (
+                {quotation.clients ? (
+                  `${quotation.clients.first_name} ${quotation.clients.last_name || ''}`
+                ) : (
                   <span className="text-muted-foreground">Sin cliente</span>
                 )}
               </TableCell>

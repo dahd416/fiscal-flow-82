@@ -14,7 +14,8 @@ import { cn } from '@/lib/utils';
 
 interface Client {
   id: string;
-  name: string;
+  first_name: string;
+  last_name: string | null;
 }
 
 interface Quotation {
@@ -132,7 +133,7 @@ export function QuotationDialog({
               <SelectContent>
                 {clients.map((client) => (
                   <SelectItem key={client.id} value={client.id}>
-                    {client.name}
+                    {client.first_name} {client.last_name}
                   </SelectItem>
                 ))}
               </SelectContent>

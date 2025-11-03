@@ -14,7 +14,8 @@ import { toast } from 'sonner';
 
 interface Client {
   id: string;
-  name: string;
+  first_name: string;
+  last_name: string | null;
   email: string | null;
   phone: string | null;
   vat_number: string | null;
@@ -27,7 +28,8 @@ export default function Clients() {
   const [clients, setClients] = useState<Client[]>([]);
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
+    first_name: '',
+    last_name: '',
     email: '',
     phone: '',
     vat_number: '',
@@ -111,7 +113,7 @@ export default function Clients() {
     } else {
       toast.success('Cliente agregado exitosamente');
       setOpen(false);
-      setFormData({ name: '', email: '', phone: '', vat_number: '', address: '', person_type: '' });
+      setFormData({ first_name: '', last_name: '', email: '', phone: '', vat_number: '', address: '', person_type: '' });
       setEmailError('');
       fetchClients();
     }
@@ -138,13 +140,22 @@ export default function Clients() {
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Nombre *</Label>
+                  <Label htmlFor="first_name">Nombre *</Label>
                   <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Nombre completo del cliente"
+                    id="first_name"
+                    value={formData.first_name}
+                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                    placeholder="Nombre del cliente"
                     required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="last_name">Apellido</Label>
+                  <Input
+                    id="last_name"
+                    value={formData.last_name}
+                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                    placeholder="Apellido del cliente"
                   />
                 </div>
                 <div className="space-y-2">
@@ -220,7 +231,7 @@ export default function Clients() {
                 <CardTitle className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <Building className="h-5 w-5" />
-                    {client.name}
+                    {client.first_name} {client.last_name}
                   </div>
                   {client.person_type && (
                     <Badge variant="outline" className="gap-1">

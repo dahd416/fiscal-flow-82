@@ -70,8 +70,9 @@ export type Database = {
           address: string | null
           created_at: string | null
           email: string | null
+          first_name: string
           id: string
-          name: string
+          last_name: string | null
           person_type: string | null
           phone: string | null
           updated_at: string | null
@@ -82,8 +83,9 @@ export type Database = {
           address?: string | null
           created_at?: string | null
           email?: string | null
+          first_name: string
           id?: string
-          name: string
+          last_name?: string | null
           person_type?: string | null
           phone?: string | null
           updated_at?: string | null
@@ -94,8 +96,9 @@ export type Database = {
           address?: string | null
           created_at?: string | null
           email?: string | null
+          first_name?: string
           id?: string
-          name?: string
+          last_name?: string | null
           person_type?: string | null
           phone?: string | null
           updated_at?: string | null

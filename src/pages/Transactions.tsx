@@ -22,7 +22,7 @@ interface Transaction {
   category: string | null;
   transaction_date: string;
   client_id: string | null;
-  clients: { name: string } | null;
+  clients: { first_name: string; last_name: string | null } | null;
 }
 
 export default function Transactions() {
@@ -42,8 +42,8 @@ export default function Transactions() {
 
   const fetchData = async () => {
     const [transactionsRes, clientsRes] = await Promise.all([
-      supabase.from('transactions').select('*, clients(name)').order('transaction_date', { ascending: false }),
-      supabase.from('clients').select('id, name'),
+      supabase.from('transactions').select('*, clients(first_name, last_name)').order('transaction_date', { ascending: false }),
+      supabase.from('clients').select('id, first_name, last_name'),
     ]);
     if (transactionsRes.data) setTransactions(transactionsRes.data as Transaction[]);
     if (clientsRes.data) setClients(clientsRes.data);
@@ -153,7 +153,7 @@ export default function Transactions() {
                     <SelectContent>
                       {clients.map((client) => (
                         <SelectItem key={client.id} value={client.id}>
-                          {client.name}
+                          {client.first_name} {client.last_name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -218,7 +218,11 @@ export default function Transactions() {
                       <span className="capitalize">{transaction.type}</span>
                     </div>
                   </TableCell>
-                  <TableCell>{transaction.clients?.name || '-'}</TableCell>
+                  <TableCell>
+                    {transaction.clients 
+                      ? `${transaction.clients.first_name} ${transaction.clients.last_name || ''}`
+                      : '-'}
+                  </TableCell>
                   <TableCell>{transaction.description || '-'}</TableCell>
                   <TableCell>{transaction.category || '-'}</TableCell>
                   <TableCell className="text-right font-medium">

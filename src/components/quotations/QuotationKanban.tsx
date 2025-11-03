@@ -20,7 +20,8 @@ interface Quotation {
   notes: string | null;
   created_at: string;
   clients?: {
-    name: string;
+    first_name: string;
+    last_name: string | null;
   };
 }
 
@@ -80,7 +81,9 @@ export function QuotationKanban({ quotations, onEdit, onDelete, onManageItems }:
                       <div>
                         <p className="text-xs text-muted-foreground">Cliente</p>
                         <p className="font-medium">
-                          {quotation.clients?.name || (
+                          {quotation.clients ? (
+                            `${quotation.clients.first_name} ${quotation.clients.last_name || ''}`
+                          ) : (
                             <span className="text-muted-foreground">Sin cliente</span>
                           )}
                         </p>
