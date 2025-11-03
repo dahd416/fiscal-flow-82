@@ -35,12 +35,12 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Check if user is admin
+    // Check if user is admin or super_admin
     const { data: adminRole } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
-      .eq("role", "admin")
+      .in("role", ["admin", "super_admin"])
       .single();
 
     if (!adminRole) {
