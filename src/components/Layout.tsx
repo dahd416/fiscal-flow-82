@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Receipt, Calendar, LogOut, UserPlus } from 'lucide-react';
+import { LayoutDashboard, Users, Receipt, Calendar, LogOut, UserPlus, UserCog } from 'lucide-react';
 
 interface LayoutProps {
   children: ReactNode;
@@ -48,12 +48,20 @@ export function Layout({ children }: LayoutProps) {
             </div>
             <div className="flex items-center gap-4">
               {isAdmin && (
-                <Link to="/invite-user">
-                  <Button variant="default" className="gap-2">
-                    <UserPlus className="h-4 w-4" />
-                    <span className="hidden sm:inline">Invitar Usuario</span>
-                  </Button>
-                </Link>
+                <>
+                  <Link to="/admin/users">
+                    <Button variant="outline" className="gap-2">
+                      <UserCog className="h-4 w-4" />
+                      <span className="hidden sm:inline">Usuarios</span>
+                    </Button>
+                  </Link>
+                  <Link to="/invite-user">
+                    <Button variant="default" className="gap-2">
+                      <UserPlus className="h-4 w-4" />
+                      <span className="hidden sm:inline">Invitar Usuario</span>
+                    </Button>
+                  </Link>
+                </>
               )}
               <span className="text-sm text-muted-foreground hidden sm:inline">
                 {user?.email}
