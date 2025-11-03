@@ -496,23 +496,80 @@ export default function AdminUsers() {
                                       </TooltipTrigger>
                                       <TooltipContent>Editar usuario</TooltipContent>
                                     </Tooltip>
+                                    
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleEditSubscription(user);
+                                          }}
+                                        >
+                                          <Calendar className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>Editar suscripción</TooltipContent>
+                                    </Tooltip>
+
                                     {!isUserSuperAdmin && (
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setDeleteUserId(user.id);
-                                            }}
-                                            className="hover:bg-destructive/10 hover:text-destructive"
-                                          >
-                                            <Trash2 className="h-4 w-4" />
-                                          </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>Eliminar usuario</TooltipContent>
-                                      </Tooltip>
+                                      <>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleToggleSuspension(user.id, user.is_suspended);
+                                              }}
+                                              className={user.is_suspended ? "hover:bg-green-500/10 hover:text-green-600" : "hover:bg-orange-500/10 hover:text-orange-600"}
+                                            >
+                                              <Ban className="h-4 w-4" />
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            {user.is_suspended ? 'Reactivar usuario' : 'Suspender usuario'}
+                                          </TooltipContent>
+                                        </Tooltip>
+
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleToggleAdmin(user.id, isUserAdmin, isUserSuperAdmin);
+                                              }}
+                                              className={isUserAdmin ? "hover:bg-red-500/10 hover:text-red-600" : "hover:bg-blue-500/10 hover:text-blue-600"}
+                                            >
+                                              <Shield className="h-4 w-4" />
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            {isUserAdmin ? 'Remover rol de admin' : 'Convertir a admin'}
+                                          </TooltipContent>
+                                        </Tooltip>
+
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setDeleteUserId(user.id);
+                                              }}
+                                              className="hover:bg-destructive/10 hover:text-destructive"
+                                            >
+                                              <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent>Eliminar usuario</TooltipContent>
+                                        </Tooltip>
+                                      </>
                                     )}
                                   </div>
                                 </TableCell>
@@ -598,6 +655,43 @@ export default function AdminUsers() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <Dialog open={!!editSubscriptionUser} onOpenChange={() => setEditSubscriptionUser(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Editar Suscripción</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="subscription-date">Fecha de Fin de Suscripción</Label>
+                <Input
+                  id="subscription-date"
+                  type="date"
+                  value={subscriptionEndDate}
+                  onChange={(e) => setSubscriptionEndDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="subscription-duration">Duración (días)</Label>
+                <Input
+                  id="subscription-duration"
+                  type="number"
+                  min="1"
+                  value={subscriptionDuration}
+                  onChange={(e) => setSubscriptionDuration(e.target.value)}
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setEditSubscriptionUser(null)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleSaveSubscription}>
+                  Guardar
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </TooltipProvider>
     </Layout>
   );
