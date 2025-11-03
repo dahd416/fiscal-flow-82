@@ -7,6 +7,7 @@ import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { DollarSign, Users, Receipt, TrendingUp, TrendingDown, Wallet, CreditCard, AlertCircle, PiggyBank, FileText, Shield } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Badge } from '@/components/ui/badge';
+import { formatCurrency, formatPercentage } from '@/lib/currency';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -119,7 +120,7 @@ export default function Dashboard() {
   const mainCards = [
     {
       title: 'Ingresos Totales',
-      value: `€${stats.ingresos.toFixed(2)}`,
+      value: formatCurrency(stats.ingresos),
       description: 'Total de entradas',
       icon: TrendingUp,
       colorClass: 'text-[hsl(var(--success))]',
@@ -127,7 +128,7 @@ export default function Dashboard() {
     },
     {
       title: 'Egresos Totales',
-      value: `€${stats.egresos.toFixed(2)}`,
+      value: formatCurrency(stats.egresos),
       description: 'Total de salidas',
       icon: TrendingDown,
       colorClass: 'text-[hsl(var(--destructive))]',
@@ -135,7 +136,7 @@ export default function Dashboard() {
     },
     {
       title: 'Utilidad Después de Impuestos',
-      value: `€${stats.utilidadDespuesImpuestos.toFixed(2)}`,
+      value: formatCurrency(stats.utilidadDespuesImpuestos),
       description: 'Ganancia neta disponible',
       icon: TrendingUp,
       colorClass: stats.utilidadDespuesImpuestos >= 0 ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--destructive))]',
@@ -143,7 +144,7 @@ export default function Dashboard() {
     },
     {
       title: 'Dinero Disponible',
-      value: `€${stats.dineroDisponible.toFixed(2)}`,
+      value: formatCurrency(stats.dineroDisponible),
       description: 'Capital de trabajo',
       icon: Wallet,
       colorClass: 'text-[hsl(var(--primary))]',
@@ -154,18 +155,18 @@ export default function Dashboard() {
   const rentabilidadCards = [
     {
       title: 'Saldo Inicial',
-      value: `€${stats.saldoInicial.toFixed(2)}`,
+      value: formatCurrency(stats.saldoInicial),
       icon: PiggyBank,
     },
     {
       title: 'Utilidad antes de Impuestos',
-      value: `€${stats.utilidadAntesImpuestos.toFixed(2)}`,
+      value: formatCurrency(stats.utilidadAntesImpuestos),
       icon: TrendingUp,
       colorClass: stats.utilidadAntesImpuestos >= 0 ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--destructive))]',
     },
     {
       title: 'Rendimiento',
-      value: `${stats.rendimiento.toFixed(2)}%`,
+      value: formatPercentage(stats.rendimiento),
       icon: TrendingUp,
       colorClass: stats.rendimiento >= 0 ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--destructive))]',
     },
@@ -174,13 +175,13 @@ export default function Dashboard() {
   const impuestosCards = [
     {
       title: 'Resguardo de Impuestos (30%)',
-      value: `€${stats.resguardoImpuestos.toFixed(2)}`,
+      value: formatCurrency(stats.resguardoImpuestos),
       icon: AlertCircle,
       colorClass: 'text-[hsl(var(--warning))]',
     },
     {
       title: 'Impuestos a Pagar (IVA)',
-      value: `€${stats.impuestosAPagar.toFixed(2)}`,
+      value: formatCurrency(stats.impuestosAPagar),
       icon: FileText,
       colorClass: 'text-[hsl(var(--warning))]',
     },
@@ -189,22 +190,22 @@ export default function Dashboard() {
   const liquidezCards = [
     {
       title: 'Efectivo',
-      value: `€${stats.efectivo.toFixed(2)}`,
+      value: formatCurrency(stats.efectivo),
       icon: DollarSign,
     },
     {
       title: 'Tarjeta',
-      value: `€${stats.tarjeta.toFixed(2)}`,
+      value: formatCurrency(stats.tarjeta),
       icon: CreditCard,
     },
     {
       title: 'Total',
-      value: `€${stats.total.toFixed(2)}`,
+      value: formatCurrency(stats.total),
       icon: Wallet,
     },
     {
       title: 'Diferencia',
-      value: `€${stats.diferencia.toFixed(2)}`,
+      value: formatCurrency(stats.diferencia),
       icon: TrendingUp,
       colorClass: stats.diferencia >= 0 ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--destructive))]',
     },
@@ -289,7 +290,7 @@ export default function Dashboard() {
                     border: '1px solid hsl(var(--border))',
                     borderRadius: '0.5rem',
                   }}
-                  formatter={(value: number) => `€${value.toFixed(2)}`}
+                  formatter={(value: number) => formatCurrency(value)}
                 />
                 <Legend />
                 <Bar dataKey="valor" fill="currentColor" radius={[8, 8, 0, 0]} />

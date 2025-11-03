@@ -28,9 +28,10 @@ import {
 import { QuotationDialog } from '@/components/quotations/QuotationDialog';
 import { QuotationItemsManager } from '@/components/quotations/QuotationItemsManager';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Search, FileText, Eye } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatCurrency } from '@/lib/currency';
 
 interface Quotation {
   id: string;
@@ -356,7 +357,7 @@ export default function Quotations() {
                         </TableCell>
                         <TableCell>{getStatusBadge(quotation.status)}</TableCell>
                         <TableCell className="text-right font-semibold">
-                          ${quotation.total_amount.toFixed(2)}
+                          {formatCurrency(quotation.total_amount)}
                         </TableCell>
                         <TableCell>
                           {quotation.valid_until ? (

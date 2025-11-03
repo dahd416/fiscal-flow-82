@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Pencil, Trash2, Clock, Shield, AlertCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -51,9 +51,9 @@ export function EventsList({
   const getEventTypeColor = (type: string) => {
     const colors: Record<string, string> = {
       vat_payment: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-      platform_payment: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+      platform_payment: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-300 dark:border-red-700',
       reminder: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-      deadline: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+      deadline: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
       custom: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
     };
     return colors[type] || colors.custom;

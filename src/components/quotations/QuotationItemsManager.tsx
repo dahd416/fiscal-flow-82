@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Trash2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatCurrency } from '@/lib/currency';
 
 interface QuotationItem {
   id?: string;
@@ -187,16 +188,16 @@ export function QuotationItemsManager({
                     <TableRow key={index}>
                       <TableCell>{item.description}</TableCell>
                       <TableCell className="text-right">{item.quantity}</TableCell>
-                      <TableCell className="text-right">${item.unit_price.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">${item.subtotal.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(item.unit_price)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(item.subtotal)}</TableCell>
                       <TableCell className="text-right">
-                        ${item.vat_amount.toFixed(2)}
+                        {formatCurrency(item.vat_amount)}
                         <span className="text-xs text-muted-foreground ml-1">
                           ({item.vat_rate}%)
                         </span>
                       </TableCell>
                       <TableCell className="text-right font-semibold">
-                        ${item.total.toFixed(2)}
+                        {formatCurrency(item.total)}
                       </TableCell>
                       {!readOnly && (
                         <TableCell>
@@ -220,15 +221,15 @@ export function QuotationItemsManager({
               <div className="w-[300px] space-y-2 border rounded-lg p-4 bg-muted/50">
                 <div className="flex justify-between text-sm">
                   <span>Subtotal:</span>
-                  <span className="font-medium">${totals.subtotal.toFixed(2)}</span>
+                  <span className="font-medium">{formatCurrency(totals.subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>IVA:</span>
-                  <span className="font-medium">${totals.vatAmount.toFixed(2)}</span>
+                  <span className="font-medium">{formatCurrency(totals.vatAmount)}</span>
                 </div>
                 <div className="flex justify-between text-lg font-bold border-t pt-2">
                   <span>Total:</span>
-                  <span>${totals.total.toFixed(2)}</span>
+                  <span>{formatCurrency(totals.total)}</span>
                 </div>
               </div>
             </div>

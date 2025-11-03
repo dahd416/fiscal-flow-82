@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Plus, TrendingUp, TrendingDown } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatCurrency } from '@/lib/currency';
 
 interface Transaction {
   id: string;
@@ -221,10 +222,10 @@ export default function Transactions() {
                   <TableCell>{transaction.description || '-'}</TableCell>
                   <TableCell>{transaction.category || '-'}</TableCell>
                   <TableCell className="text-right font-medium">
-                    €{transaction.amount.toFixed(2)}
+                    {formatCurrency(transaction.amount)}
                   </TableCell>
                   <TableCell className="text-right">
-                    €{transaction.vat_amount.toFixed(2)}
+                    {formatCurrency(transaction.vat_amount)}
                   </TableCell>
                 </TableRow>
               ))}

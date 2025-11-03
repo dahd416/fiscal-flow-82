@@ -40,15 +40,15 @@ export function CalendarView({ events, onDateSelect, selectedDate }: CalendarVie
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'urgent':
-        return 'bg-red-500';
+        return 'bg-red-500 dark:bg-red-600';
       case 'high':
-        return 'bg-orange-500';
+        return 'bg-orange-500 dark:bg-orange-600';
       case 'medium':
-        return 'bg-yellow-500';
+        return 'bg-yellow-500 dark:bg-yellow-600';
       case 'low':
-        return 'bg-blue-500';
+        return 'bg-blue-500 dark:bg-blue-600';
       default:
-        return 'bg-gray-500';
+        return 'bg-gray-500 dark:bg-gray-600';
     }
   };
 
