@@ -22,6 +22,10 @@ interface Transaction {
     first_name: string | null;
     last_name: string | null;
   } | null;
+  clients: {
+    first_name: string;
+    last_name: string | null;
+  } | null;
   quotations: { quotation_number: string; title: string } | null;
 }
 
@@ -37,8 +41,8 @@ interface UserStats {
 export function GlobalActivityPanel() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
   const [userFilter, setUserFilter] = useState<string>('all');
+  const [allUsers, setAllUsers] = useState<Array<{ id: string; name: string; role: string }>>([]);
   const [globalStats, setGlobalStats] = useState({
     totalIncome: 0,
     totalExpense: 0,
@@ -55,17 +59,52 @@ export function GlobalActivityPanel() {
 
   useEffect(() => {
     calculateStats();
-  }, [transactions, typeFilter, userFilter]);
+  }, [transactions, userFilter]);
 
   const loadAllActivity = async () => {
     try {
       setLoading(true);
       
-      // First, get all transactions
+      // Get all users with their roles
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name');
+
+      if (profilesError) throw profilesError;
+
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('role', ['admin', 'user']);
+
+      if (rolesError) throw rolesError;
+
+      // Create a map of users with their roles
+      const usersWithRoles = (profilesData || [])
+        .filter(profile => {
+          const hasRole = rolesData?.some(r => 
+            r.user_id === profile.id && (r.role === 'admin' || r.role === 'user')
+          );
+          return hasRole;
+        })
+        .map(profile => {
+          const role = rolesData?.find(r => r.user_id === profile.id)?.role || 'user';
+          const name = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Sin nombre';
+          return {
+            id: profile.id,
+            name,
+            role,
+          };
+        });
+
+      setAllUsers(usersWithRoles);
+
+      // Get all transactions with clients
       const { data: transactionsData, error: transError } = await supabase
         .from('transactions')
         .select(`
           *,
+          clients(first_name, last_name),
           quotations(quotation_number, title)
         `)
         .in('type', ['income', 'expense'])
@@ -73,13 +112,6 @@ export function GlobalActivityPanel() {
         .limit(500);
 
       if (transError) throw transError;
-
-      // Then get all profiles
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name');
-
-      if (profilesError) throw profilesError;
 
       // Map profiles to transactions
       const profilesMap = new Map(
@@ -92,18 +124,6 @@ export function GlobalActivityPanel() {
       })) as Transaction[];
 
       setTransactions(enrichedTransactions);
-
-      // Extract unique users
-      const usersMap = new Map<string, string>();
-      enrichedTransactions.forEach(t => {
-        if (t.profiles) {
-          const name = [t.profiles.first_name, t.profiles.last_name].filter(Boolean).join(' ') || 'Sin nombre';
-          usersMap.set(t.user_id, name);
-        }
-      });
-      
-      const users = Array.from(usersMap.entries()).map(([id, name]) => ({ id, name }));
-      setUniqueUsers(users);
     } catch (error) {
       console.error('Error loading activity:', error);
     } finally {
@@ -114,22 +134,18 @@ export function GlobalActivityPanel() {
   const calculateStats = () => {
     let filtered = transactions;
 
-    if (typeFilter !== 'all') {
-      filtered = filtered.filter(t => t.type === typeFilter);
-    }
-
     if (userFilter !== 'all') {
       filtered = filtered.filter(t => t.user_id === userFilter);
     }
 
-    const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-    const expense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+    const income = filtered.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+    const expense = filtered.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
 
     setGlobalStats({
       totalIncome: income,
       totalExpense: expense,
       balance: income - expense,
-      totalUsers: uniqueUsers.length,
+      totalUsers: allUsers.length,
       totalTransactions: filtered.length,
     });
 
@@ -167,13 +183,11 @@ export function GlobalActivityPanel() {
   };
 
   const filteredTransactions = transactions.filter(t => {
-    if (typeFilter !== 'all' && t.type !== typeFilter) return false;
     if (userFilter !== 'all' && t.user_id !== userFilter) return false;
     return true;
   });
 
   const clearFilters = () => {
-    setTypeFilter('all');
     setUserFilter('all');
   };
 
@@ -270,23 +284,16 @@ export function GlobalActivityPanel() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Filtros</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Filtrar por Usuario
+          </CardTitle>
+          <CardDescription>
+            Selecciona un usuario para ver su actividad financiera
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4 items-end">
-            <div className="flex-1 space-y-2">
-              <label className="text-sm font-medium">Tipo</label>
-              <Select value={typeFilter} onValueChange={(v: any) => setTypeFilter(v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="income">Solo Ingresos</SelectItem>
-                  <SelectItem value="expense">Solo Egresos</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
             <div className="flex-1 space-y-2">
               <label className="text-sm font-medium">Usuario</label>
               <Select value={userFilter} onValueChange={setUserFilter}>
@@ -295,20 +302,25 @@ export function GlobalActivityPanel() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos los usuarios</SelectItem>
-                  {uniqueUsers.map(user => (
+                  {allUsers.map(user => (
                     <SelectItem key={user.id} value={user.id}>
-                      {user.name}
+                      <div className="flex items-center gap-2">
+                        <span>{user.name}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {user.role === 'admin' ? 'Admin' : 'Usuario'}
+                        </Badge>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            {(typeFilter !== 'all' || userFilter !== 'all') && (
+            {userFilter !== 'all' && (
               <button
                 onClick={clearFilters}
                 className="px-4 py-2 text-sm border rounded-md hover:bg-muted"
               >
-                Limpiar
+                Ver Todos
               </button>
             )}
           </div>
@@ -349,13 +361,14 @@ export function GlobalActivityPanel() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="w-[120px]">Fecha</TableHead>
-                          <TableHead className="w-[180px]">Usuario</TableHead>
-                          <TableHead className="w-[100px]">Tipo</TableHead>
-                          <TableHead>Descripción</TableHead>
-                          <TableHead className="w-[140px]">Categoría</TableHead>
-                          <TableHead className="text-right w-[120px]">Monto</TableHead>
-                          <TableHead className="text-right w-[100px]">IVA</TableHead>
+                          <TableHead className="w-[110px]">Fecha</TableHead>
+                          <TableHead className="w-[160px]">Usuario</TableHead>
+                          <TableHead className="w-[90px]">Tipo</TableHead>
+                          <TableHead className="min-w-[200px]">Descripción</TableHead>
+                          <TableHead className="w-[150px]">Cliente</TableHead>
+                          <TableHead className="w-[130px]">Categoría</TableHead>
+                          <TableHead className="text-right w-[110px]">Monto</TableHead>
+                          <TableHead className="text-right w-[90px]">IVA</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -398,6 +411,17 @@ export function GlobalActivityPanel() {
                                     <span className="text-muted-foreground italic">Sin descripción</span>
                                   )}
                                 </div>
+                              </TableCell>
+                              <TableCell>
+                                {transaction.clients ? (
+                                  <div className="truncate font-medium">
+                                    {[transaction.clients.first_name, transaction.clients.last_name]
+                                      .filter(Boolean)
+                                      .join(' ')}
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">Sin cliente</span>
+                                )}
                               </TableCell>
                               <TableCell>
                                 {transaction.category ? (
