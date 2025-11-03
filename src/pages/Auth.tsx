@@ -22,10 +22,28 @@ export default function Auth() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) {
+      setEmailError('');
+      return false;
+    }
+    if (!emailRegex.test(email)) {
+      setEmailError('Formato de correo inválido');
+      return false;
+    }
+    setEmailError('');
+    return true;
+  };
   const { signIn, signUp, resetPassword, updatePassword } = useAuth();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateEmail(email)) {
+      return;
+    }
     setLoading(true);
     try {
       await signIn(email, password);
@@ -36,6 +54,11 @@ export default function Auth() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validar correo
+    if (!validateEmail(email)) {
+      return;
+    }
     
     // Validar contraseña
     const hasMinLength = password.length >= 6;
@@ -56,6 +79,9 @@ export default function Auth() {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateEmail(email)) {
+      return;
+    }
     setLoading(true);
     try {
       await resetPassword(email);
@@ -150,16 +176,24 @@ export default function Auth() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleForgotPassword} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="forgot-email">Correo Electrónico</Label>
-                <Input
-                  id="forgot-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="forgot-email">Correo Electrónico</Label>
+                  <Input
+                    id="forgot-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      validateEmail(e.target.value);
+                    }}
+                    onBlur={() => validateEmail(email)}
+                    required
+                    className={emailError ? 'border-destructive' : ''}
+                  />
+                  {emailError && (
+                    <p className="text-sm text-destructive">{emailError}</p>
+                  )}
+                </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Enviando...' : 'Enviar Enlace de Restablecimiento'}
               </Button>
@@ -200,9 +234,17 @@ export default function Auth() {
                     id="signin-email"
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      validateEmail(e.target.value);
+                    }}
+                    onBlur={() => validateEmail(email)}
                     required
+                    className={emailError ? 'border-destructive' : ''}
                   />
+                  {emailError && (
+                    <p className="text-sm text-destructive">{emailError}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signin-password">Contraseña</Label>
@@ -269,9 +311,17 @@ export default function Auth() {
                     id="signup-email"
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      validateEmail(e.target.value);
+                    }}
+                    onBlur={() => validateEmail(email)}
                     required
+                    className={emailError ? 'border-destructive' : ''}
                   />
+                  {emailError && (
+                    <p className="text-sm text-destructive">{emailError}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Contraseña</Label>
