@@ -197,10 +197,11 @@ export default function AdminUsers() {
             <TableBody>
               {users.map((user) => {
                 const isUserAdmin = user.roles.includes('admin');
+                const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Sin nombre';
                 return (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">
-                      {user.first_name} {user.last_name}
+                      {fullName}
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.rfc || 'N/A'}</TableCell>
