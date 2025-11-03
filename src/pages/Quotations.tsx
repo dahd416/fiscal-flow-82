@@ -258,6 +258,23 @@ export default function Quotations() {
     }
   };
 
+  const handleStatusChange = async (quotationId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('quotations')
+        .update({ status: newStatus })
+        .eq('id', quotationId);
+
+      if (error) throw error;
+
+      toast.success('Estado actualizado');
+      loadQuotations();
+    } catch (error: any) {
+      console.error('Error updating status:', error);
+      toast.error('Error al actualizar estado');
+    }
+  };
+
   const handleManageItems = async (quotation: Quotation) => {
     setCurrentQuotationId(quotation.id);
     await loadQuotationItems(quotation.id);
@@ -344,6 +361,7 @@ export default function Quotations() {
                   onEdit={handleEdit}
                   onDelete={setDeleteQuotationId}
                   onManageItems={handleManageItems}
+                  onStatusChange={handleStatusChange}
                 />
               )
             ) : (
