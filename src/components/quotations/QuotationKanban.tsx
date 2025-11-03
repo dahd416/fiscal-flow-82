@@ -73,6 +73,17 @@ export function QuotationKanban({ quotations, onEdit, onDelete, onManageItems, o
     const currentStatus = e.dataTransfer.getData('currentStatus');
 
     if (currentStatus !== newStatus && quotationId) {
+      // Validar que la cotización tenga items antes de cambiar de borrador
+      const quotation = quotations.find(q => q.id === quotationId);
+      
+      if (quotation && quotation.total_amount === 0 && currentStatus === 'draft' && newStatus !== 'draft') {
+        const { toast } = await import('sonner');
+        toast.error('No se puede cambiar el estado', {
+          description: 'Debes agregar items a la cotización primero'
+        });
+        return;
+      }
+
       await onStatusChange(quotationId, newStatus);
     }
   };
@@ -105,11 +116,16 @@ export function QuotationKanban({ quotations, onEdit, onDelete, onManageItems, o
               {columnQuotations.map((quotation) => (
                 <div
                   key={quotation.id}
-                  draggable
+                  draggable={!(quotation.total_amount === 0 && quotation.status === 'draft')}
                   onDragStart={(e) => handleDragStart(e, quotation)}
-                  className="cursor-move"
+                  className={quotation.total_amount === 0 && quotation.status === 'draft' ? 'cursor-not-allowed' : 'cursor-move'}
+                  title={quotation.total_amount === 0 && quotation.status === 'draft' ? 'Agrega items primero' : ''}
                 >
-                  <Card className="hover:shadow-lg transition-shadow">
+                  <Card className={`hover:shadow-lg transition-shadow ${
+                    quotation.total_amount === 0 && quotation.status === 'draft' 
+                      ? 'border-dashed border-orange-300 bg-orange-50/50' 
+                      : ''
+                  }`}>
                     <CardHeader className="pb-3">
                       <div className="space-y-1">
                         <div className="flex items-start justify-between gap-2">
@@ -140,9 +156,16 @@ export function QuotationKanban({ quotations, onEdit, onDelete, onManageItems, o
 
                         <div>
                           <p className="text-xs text-muted-foreground">Total</p>
-                          <p className="font-bold text-lg">
+                          <p className={`font-bold text-lg ${
+                            quotation.total_amount === 0 ? 'text-orange-600' : ''
+                          }`}>
                             {formatCurrency(quotation.total_amount)}
                           </p>
+                          {quotation.total_amount === 0 && quotation.status === 'draft' && (
+                            <p className="text-xs text-orange-600 mt-1">
+                              ⚠️ Agrega items para enviar
+                            </p>
+                          )}
                         </div>
 
                         {quotation.valid_until && (
