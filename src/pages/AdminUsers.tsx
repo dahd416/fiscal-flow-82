@@ -328,7 +328,7 @@ export default function AdminUsers() {
             </Link>
           </div>
 
-          <Tabs defaultValue="users" className="space-y-6" value={selectedUser ? undefined : 'users'}>
+          <Tabs defaultValue="users" className="space-y-6">
             <TabsList className="grid w-full max-w-2xl grid-cols-3">
               <TabsTrigger value="users" className="gap-2">
                 <Users className="h-4 w-4" />
