@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Plus, Users } from 'lucide-react';
+import { parseISO, isSameDay } from 'date-fns';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -187,12 +188,7 @@ export default function VatPeriods() {
   };
 
   const filteredEvents = events.filter((event) => {
-    const eventDate = new Date(event.event_date);
-    return (
-      eventDate.getDate() === selectedDate.getDate() &&
-      eventDate.getMonth() === selectedDate.getMonth() &&
-      eventDate.getFullYear() === selectedDate.getFullYear()
-    );
+    return isSameDay(parseISO(event.event_date), selectedDate);
   });
 
   const selectedUserName = users.find((u) => u.id === selectedUserId);
