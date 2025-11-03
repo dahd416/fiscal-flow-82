@@ -10,8 +10,9 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { EditUserDialog } from '@/components/admin/EditUserDialog';
 import { toast } from 'sonner';
-import { Trash2, Shield, User as UserIcon, Calendar, Ban } from 'lucide-react';
+import { Trash2, Shield, User as UserIcon, Calendar, Ban, Pencil } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,6 +52,7 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [editSubscriptionUser, setEditSubscriptionUser] = useState<UserWithRole | null>(null);
+  const [editUser, setEditUser] = useState<UserWithRole | null>(null);
   const [subscriptionEndDate, setSubscriptionEndDate] = useState('');
   const [subscriptionDuration, setSubscriptionDuration] = useState('30');
 
@@ -71,35 +73,15 @@ export default function AdminUsers() {
     try {
       setLoading(true);
 
-      // Get all profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (profilesError) throw profilesError;
-
-      // Get all user roles
-      const { data: roles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
-
-      if (rolesError) throw rolesError;
-
-      // Combine data
-      const usersWithRoles: UserWithRole[] = (profiles || []).map((profile) => {
-        const userRoles = (roles || [])
-          .filter((r) => r.user_id === profile.id)
-          .map((r) => r.role);
-
-        return {
-          ...profile,
-          email: 'N/A', // Email is not available from client
-          roles: userRoles,
-        };
+      const { data, error } = await supabase.functions.invoke('admin-get-users', {
+        method: 'POST',
       });
 
-      setUsers(usersWithRoles);
+      if (error) throw error;
+
+      if (data?.users) {
+        setUsers(data.users);
+      }
     } catch (error: any) {
       console.error('Error loading users:', error);
       toast.error('Error al cargar usuarios');
@@ -141,18 +123,9 @@ export default function AdminUsers() {
     if (!deleteUserId) return;
 
     try {
-      // Delete user roles first (cascade will handle this, but being explicit)
-      await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', deleteUserId);
-
-      // Note: Deleting auth.users requires service role key
-      // For now, we'll just remove the profile and roles
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', deleteUserId);
+      const { error } = await supabase.functions.invoke('admin-delete-user', {
+        body: { userId: deleteUserId },
+      });
 
       if (error) throw error;
 
@@ -325,6 +298,14 @@ export default function AdminUsers() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-2 justify-end flex-wrap">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditUser(user)}
+                        >
+                          <Pencil className="h-4 w-4 mr-1" />
+                          Editar
+                        </Button>
                         {!isUserAdmin && (
                           <>
                             <Button
@@ -390,6 +371,13 @@ export default function AdminUsers() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <EditUserDialog
+        user={editUser}
+        open={!!editUser}
+        onClose={() => setEditUser(null)}
+        onSuccess={loadUsers}
+      />
 
       <Dialog open={!!editSubscriptionUser} onOpenChange={() => setEditSubscriptionUser(null)}>
         <DialogContent>
