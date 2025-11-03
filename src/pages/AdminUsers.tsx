@@ -12,7 +12,8 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EditUserDialog } from '@/components/admin/EditUserDialog';
 import { toast } from 'sonner';
-import { Trash2, Shield, User as UserIcon, Calendar, Ban, Pencil } from 'lucide-react';
+import { Trash2, Shield, User as UserIcon, Calendar, Ban, Pencil, UserPlus } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -205,13 +206,23 @@ export default function AdminUsers() {
     <Layout>
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UserIcon className="h-5 w-5" />
-            Gestión de Usuarios
-          </CardTitle>
-          <CardDescription>
-            Administra todos los usuarios de la plataforma
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <UserIcon className="h-5 w-5" />
+                Gestión de Usuarios
+              </CardTitle>
+              <CardDescription>
+                Administra todos los usuarios de la plataforma
+              </CardDescription>
+            </div>
+            <Link to="/invite-user">
+              <Button variant="default" className="gap-2">
+                <UserPlus className="h-4 w-4" />
+                Invitar Usuario
+              </Button>
+            </Link>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
