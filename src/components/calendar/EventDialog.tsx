@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -100,6 +100,11 @@ export function EventDialog({
           <DialogTitle>
             {event ? 'Editar Evento' : isAdminCreating ? 'Crear Evento para Usuario' : 'Nuevo Evento'}
           </DialogTitle>
+          <DialogDescription>
+            {event 
+              ? 'Modifica los detalles del evento' 
+              : 'Completa la información para crear un nuevo evento en el calendario'}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">

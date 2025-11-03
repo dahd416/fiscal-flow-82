@@ -9,6 +9,7 @@ import { EventDialog } from '@/components/calendar/EventDialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { Plus, Users } from 'lucide-react';
 import { parseISO, isSameDay } from 'date-fns';
@@ -243,24 +244,35 @@ export default function VatPeriods() {
           </Card>
         )}
 
-        <div className="grid gap-6 lg:grid-cols-[1fr,400px]">
-          <CalendarView
-            events={events}
-            onDateSelect={setSelectedDate}
-            selectedDate={selectedDate}
-          />
-          <EventsList
-            events={filteredEvents}
-            selectedDate={selectedDate}
-            onToggleComplete={handleToggleComplete}
-            onEdit={(event) => {
-              setEditingEvent(event as CalendarEvent);
-              setDialogOpen(true);
-            }}
-            onDelete={setDeleteEventId}
-            isAdmin={isAdmin}
-          />
-        </div>
+        {loading ? (
+          <div className="grid gap-6 lg:grid-cols-[1fr,400px]">
+            <Card className="p-6">
+              <Skeleton className="h-[600px]" />
+            </Card>
+            <Card className="p-6">
+              <Skeleton className="h-[600px]" />
+            </Card>
+          </div>
+        ) : (
+          <div className="grid gap-6 lg:grid-cols-[1fr,400px]">
+            <CalendarView
+              events={events}
+              onDateSelect={setSelectedDate}
+              selectedDate={selectedDate}
+            />
+            <EventsList
+              events={filteredEvents}
+              selectedDate={selectedDate}
+              onToggleComplete={handleToggleComplete}
+              onEdit={(event) => {
+                setEditingEvent(event as CalendarEvent);
+                setDialogOpen(true);
+              }}
+              onDelete={setDeleteEventId}
+              isAdmin={isAdmin}
+            />
+          </div>
+        )}
       </div>
 
       <EventDialog
