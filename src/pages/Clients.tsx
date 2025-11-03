@@ -208,7 +208,7 @@ export default function Clients() {
                 </TabsTrigger>
               </TabsList>
             </Tabs>
-            <Dialog open={open} onOpenChange={handleCloseDialog}>
+            <Dialog open={open} onOpenChange={(isOpen) => { if (isOpen) { setEditingClient(null); setOpen(true); } else { handleCloseDialog(); } }}>
               <DialogTrigger asChild>
                 <Button className="gap-2">
                   <Plus className="h-4 w-4" />
