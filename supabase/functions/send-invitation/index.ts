@@ -22,7 +22,7 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     // Get authorization header
-    const authHeader = req.headers.get("authorization");
+    const authHeader = req.headers.get("Authorization") ?? req.headers.get("authorization");
     if (!authHeader) {
       throw new Error("No authorization header");
     }
@@ -30,7 +30,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Create Supabase client
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       {
         global: {
           headers: { Authorization: authHeader },
@@ -72,16 +72,9 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Invalid email format");
     }
 
-    // Check if user already exists
-    const { data: existingUser } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("id", user.id)
-      .single();
+    // Optionally: verify the email is not already registered via Auth Admin
+    // Skipping explicit duplicate check here to avoid false positives when profiles don't store email.
 
-    if (existingUser) {
-      throw new Error("User with this email already exists");
-    }
 
     // Generate unique token
     const token = crypto.randomUUID();
