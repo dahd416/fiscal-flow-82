@@ -30,6 +30,46 @@ export default function Clients() {
     vat_number: '',
     address: '',
   });
+  const [emailError, setEmailError] = useState('');
+
+  const formatPhone = (value: string) => {
+    // Remove all non-digit characters
+    const cleaned = value.replace(/\D/g, '');
+    
+    // Format as XXX - XXX - XXXX
+    if (cleaned.length <= 3) {
+      return cleaned;
+    } else if (cleaned.length <= 6) {
+      return `${cleaned.slice(0, 3)} - ${cleaned.slice(3)}`;
+    } else {
+      return `${cleaned.slice(0, 3)} - ${cleaned.slice(3, 6)} - ${cleaned.slice(6, 10)}`;
+    }
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhone(e.target.value);
+    setFormData({ ...formData, phone: formatted });
+  };
+
+  const validateEmail = (email: string) => {
+    if (!email) {
+      setEmailError('');
+      return true;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setEmailError('Formato de correo electrónico inválido');
+      return false;
+    }
+    setEmailError('');
+    return true;
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const email = e.target.value;
+    setFormData({ ...formData, email });
+    validateEmail(email);
+  };
 
   const fetchClients = async () => {
     const { data } = await supabase
@@ -45,6 +85,13 @@ export default function Clients() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate email before submitting
+    if (formData.email && !validateEmail(formData.email)) {
+      toast.error('Por favor, ingresa un correo electrónico válido');
+      return;
+    }
+
     const { error } = await supabase.from('clients').insert([
       { ...formData, user_id: user!.id }
     ]);
@@ -55,6 +102,7 @@ export default function Clients() {
       toast.success('Cliente agregado exitosamente');
       setOpen(false);
       setFormData({ name: '', email: '', phone: '', vat_number: '', address: '' });
+      setEmailError('');
       fetchClients();
     }
   };
@@ -85,6 +133,7 @@ export default function Clients() {
                     id="name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Nombre completo del cliente"
                     required
                   />
                 </div>
@@ -94,23 +143,32 @@ export default function Clients() {
                     id="email"
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={handleEmailChange}
+                    placeholder="ejemplo@correo.com"
+                    className={emailError ? 'border-destructive' : ''}
                   />
+                  {emailError && (
+                    <p className="text-sm text-destructive">{emailError}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Teléfono</Label>
                   <Input
                     id="phone"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={handlePhoneChange}
+                    placeholder="XXX - XXX - XXXX"
+                    maxLength={16}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="vat_number">NIF/CIF</Label>
+                  <Label htmlFor="vat_number">RFC</Label>
                   <Input
                     id="vat_number"
                     value={formData.vat_number}
-                    onChange={(e) => setFormData({ ...formData, vat_number: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, vat_number: e.target.value.toUpperCase() })}
+                    placeholder="RFC del cliente"
+                    maxLength={13}
                   />
                 </div>
                 <div className="space-y-2">
@@ -119,6 +177,7 @@ export default function Clients() {
                     id="address"
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    placeholder="Dirección completa"
                   />
                 </div>
                 <Button type="submit" className="w-full">Agregar Cliente</Button>
@@ -151,7 +210,7 @@ export default function Clients() {
                 )}
                 {client.vat_number && (
                   <div className="text-sm">
-                    <span className="font-medium">NIF/CIF:</span> {client.vat_number}
+                    <span className="font-medium">RFC:</span> {client.vat_number}
                   </div>
                 )}
               </CardContent>
