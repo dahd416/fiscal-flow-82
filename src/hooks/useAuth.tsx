@@ -30,9 +30,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Check if user is suspended
+        // Check if user is suspended and not an admin
         if (session?.user) {
           setTimeout(async () => {
+            // Check if user is admin first
+            const { data: adminRole } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', session.user.id)
+              .eq('role', 'admin')
+              .single();
+            
+            // If admin, skip suspension check
+            if (adminRole) return;
+            
+            // Check if regular user is suspended
             const { data: profile } = await supabase
               .from('profiles')
               .select('is_suspended')

@@ -294,7 +294,7 @@ export default function AdminUsers() {
                       {new Date(user.created_at).toLocaleDateString('es-ES')}
                     </TableCell>
                     <TableCell>
-                      {user.subscription_end_date ? (
+                      {user.subscription_end_date && !isUserAdmin ? (
                         <div className="flex flex-col gap-1">
                           <span className="text-sm">
                             {new Date(user.subscription_end_date).toLocaleDateString('es-ES')}
@@ -317,27 +317,33 @@ export default function AdminUsers() {
                             </Badge>
                           )}
                         </div>
+                      ) : isUserAdmin ? (
+                        <Badge variant="outline">No aplica</Badge>
                       ) : (
                         'Sin fecha'
                       )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-2 justify-end flex-wrap">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditSubscription(user)}
-                        >
-                          <Calendar className="h-4 w-4 mr-1" />
-                          Suscripción
-                        </Button>
-                        <Button
-                          variant={user.is_suspended ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => handleToggleSuspension(user.id, user.is_suspended)}
-                        >
-                          {user.is_suspended ? 'Reactivar' : 'Suspender'}
-                        </Button>
+                        {!isUserAdmin && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditSubscription(user)}
+                            >
+                              <Calendar className="h-4 w-4 mr-1" />
+                              Suscripción
+                            </Button>
+                            <Button
+                              variant={user.is_suspended ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => handleToggleSuspension(user.id, user.is_suspended)}
+                            >
+                              {user.is_suspended ? 'Reactivar' : 'Suspender'}
+                            </Button>
+                          </>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"

@@ -38,7 +38,7 @@ const handler = async (req: Request): Promise<Response> => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Get all profiles with subscription dates
+    // Get all profiles with subscription dates (excluding admins)
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
       .select("id, subscription_end_date, is_suspended, first_name, last_name")
@@ -51,6 +51,19 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Found ${profiles?.length || 0} profiles with subscriptions`);
 
+    // Get admin users to exclude them
+    const { data: adminRoles, error: adminError } = await supabase
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "admin");
+
+    if (adminError) {
+      console.error("Error fetching admin roles:", adminError);
+      throw adminError;
+    }
+
+    const adminUserIds = new Set(adminRoles?.map(r => r.user_id) || []);
+
     // Get all user emails
     const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers();
     
@@ -62,6 +75,12 @@ const handler = async (req: Request): Promise<Response> => {
     const userEmailMap = new Map(users.map((u) => [u.id, u.email || '']));
 
     for (const profile of profiles as Profile[]) {
+      // Skip admins
+      if (adminUserIds.has(profile.id)) {
+        console.log(`Skipping admin user ${profile.id}`);
+        continue;
+      }
+
       if (!profile.subscription_end_date) continue;
 
       const endDate = new Date(profile.subscription_end_date);
