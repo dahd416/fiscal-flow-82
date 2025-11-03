@@ -16,6 +16,7 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [rfc, setRfc] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -36,7 +37,7 @@ export default function Auth() {
     e.preventDefault();
     setLoading(true);
     try {
-      await signUp(email, password, firstName, lastName);
+      await signUp(email, password, firstName, lastName, rfc);
     } finally {
       setLoading(false);
     }
@@ -227,6 +228,18 @@ export default function Auth() {
                     onChange={(e) => setLastName(e.target.value)}
                     required
                     placeholder="Ej: Pérez"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-rfc">RFC</Label>
+                  <Input
+                    id="signup-rfc"
+                    type="text"
+                    value={rfc}
+                    onChange={(e) => setRfc(e.target.value.toUpperCase())}
+                    required
+                    placeholder="Ej: XAXX010101000"
+                    maxLength={13}
                   />
                 </div>
                 <div className="space-y-2">
