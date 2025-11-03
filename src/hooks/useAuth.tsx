@@ -29,6 +29,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Check if user is suspended
+        if (session?.user) {
+          setTimeout(async () => {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('is_suspended')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (profile?.is_suspended) {
+              await supabase.auth.signOut();
+              toast.error('Tu cuenta ha sido suspendida. Contacta al administrador.');
+              navigate('/auth');
+            }
+          }, 0);
+        }
       }
     );
 
@@ -39,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate]);
 
   const signIn = async (email: string, password: string) => {
     try {

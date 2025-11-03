@@ -4,6 +4,7 @@ import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { Button } from '@/components/ui/button';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Users, Receipt, Calendar, LogOut, UserPlus, UserCog } from 'lucide-react';
+import { NotificationBell } from '@/components/NotificationBell';
 
 interface LayoutProps {
   children: ReactNode;
@@ -68,6 +69,7 @@ export function Layout({ children }: LayoutProps) {
                   </Link>
                 </>
               )}
+              <NotificationBell />
               <span className="text-sm text-muted-foreground hidden sm:inline">
                 {user?.email}
               </span>

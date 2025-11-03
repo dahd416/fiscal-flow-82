@@ -7,8 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Trash2, Shield, User as UserIcon } from 'lucide-react';
+import { Trash2, Shield, User as UserIcon, Calendar, Ban } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +29,9 @@ interface UserProfile {
   last_name: string | null;
   rfc: string | null;
   created_at: string;
+  subscription_end_date: string | null;
+  subscription_duration_days: number;
+  is_suspended: boolean;
 }
 
 interface UserRole {
@@ -44,6 +50,9 @@ export default function AdminUsers() {
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
+  const [editSubscriptionUser, setEditSubscriptionUser] = useState<UserWithRole | null>(null);
+  const [subscriptionEndDate, setSubscriptionEndDate] = useState('');
+  const [subscriptionDuration, setSubscriptionDuration] = useState('30');
 
   useEffect(() => {
     if (!adminLoading && !isAdmin) {
@@ -156,6 +165,55 @@ export default function AdminUsers() {
     }
   };
 
+  const handleEditSubscription = (user: UserWithRole) => {
+    setEditSubscriptionUser(user);
+    setSubscriptionEndDate(user.subscription_end_date || '');
+    setSubscriptionDuration(user.subscription_duration_days?.toString() || '30');
+  };
+
+  const handleSaveSubscription = async () => {
+    if (!editSubscriptionUser) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          subscription_end_date: subscriptionEndDate || null,
+          subscription_duration_days: parseInt(subscriptionDuration),
+          is_suspended: false, // Reactivate if updating subscription
+        })
+        .eq('id', editSubscriptionUser.id);
+
+      if (error) throw error;
+
+      toast.success('Suscripción actualizada exitosamente');
+      setEditSubscriptionUser(null);
+      loadUsers();
+    } catch (error: any) {
+      console.error('Error updating subscription:', error);
+      toast.error('Error al actualizar suscripción');
+    }
+  };
+
+  const handleToggleSuspension = async (userId: string, currentSuspendedStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_suspended: !currentSuspendedStatus })
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      toast.success(
+        currentSuspendedStatus ? 'Usuario reactivado' : 'Usuario suspendido'
+      );
+      loadUsers();
+    } catch (error: any) {
+      console.error('Error toggling suspension:', error);
+      toast.error('Error al cambiar estado de suspensión');
+    }
+  };
+
   if (adminLoading || loading) {
     return (
       <Layout>
@@ -190,7 +248,9 @@ export default function AdminUsers() {
                 <TableHead>Email</TableHead>
                 <TableHead>RFC</TableHead>
                 <TableHead>Roles</TableHead>
+                <TableHead>Estado</TableHead>
                 <TableHead>Fecha de Registro</TableHead>
+                <TableHead>Fecha de Corte</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -198,8 +258,13 @@ export default function AdminUsers() {
               {users.map((user) => {
                 const isUserAdmin = user.roles.includes('admin');
                 const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Sin nombre';
+                
+                const daysUntilExpiration = user.subscription_end_date 
+                  ? Math.ceil((new Date(user.subscription_end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+                  : null;
+
                 return (
-                  <TableRow key={user.id}>
+                  <TableRow key={user.id} className={user.is_suspended ? 'opacity-60' : ''}>
                     <TableCell className="font-medium">
                       {fullName}
                     </TableCell>
@@ -216,10 +281,63 @@ export default function AdminUsers() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {new Date(user.created_at).toLocaleDateString()}
+                      {user.is_suspended ? (
+                        <Badge variant="destructive" className="gap-1">
+                          <Ban className="h-3 w-3" />
+                          Suspendido
+                        </Badge>
+                      ) : (
+                        <Badge variant="default">Activo</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {new Date(user.created_at).toLocaleDateString('es-ES')}
+                    </TableCell>
+                    <TableCell>
+                      {user.subscription_end_date ? (
+                        <div className="flex flex-col gap-1">
+                          <span className="text-sm">
+                            {new Date(user.subscription_end_date).toLocaleDateString('es-ES')}
+                          </span>
+                          {daysUntilExpiration !== null && (
+                            <Badge 
+                              variant={
+                                daysUntilExpiration < 0 ? 'destructive' : 
+                                daysUntilExpiration <= 3 ? 'default' : 
+                                'secondary'
+                              }
+                              className="text-xs"
+                            >
+                              {daysUntilExpiration < 0 
+                                ? `Vencida hace ${Math.abs(daysUntilExpiration)} días`
+                                : daysUntilExpiration === 0
+                                ? 'Vence hoy'
+                                : `${daysUntilExpiration} días`
+                              }
+                            </Badge>
+                          )}
+                        </div>
+                      ) : (
+                        'Sin fecha'
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex gap-2 justify-end">
+                      <div className="flex gap-2 justify-end flex-wrap">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditSubscription(user)}
+                        >
+                          <Calendar className="h-4 w-4 mr-1" />
+                          Suscripción
+                        </Button>
+                        <Button
+                          variant={user.is_suspended ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handleToggleSuspension(user.id, user.is_suspended)}
+                        >
+                          {user.is_suspended ? 'Reactivar' : 'Suspender'}
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
@@ -266,6 +384,49 @@ export default function AdminUsers() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!editSubscriptionUser} onOpenChange={() => setEditSubscriptionUser(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Suscripción</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="subscription_end_date">Fecha de Corte</Label>
+              <Input
+                id="subscription_end_date"
+                type="date"
+                value={subscriptionEndDate}
+                onChange={(e) => setSubscriptionEndDate(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                La suscripción vencerá en esta fecha
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="subscription_duration">Duración (días)</Label>
+              <Input
+                id="subscription_duration"
+                type="number"
+                min="1"
+                value={subscriptionDuration}
+                onChange={(e) => setSubscriptionDuration(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Duración predeterminada de la suscripción en días
+              </p>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setEditSubscriptionUser(null)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSaveSubscription}>
+                Guardar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

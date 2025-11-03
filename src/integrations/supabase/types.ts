@@ -50,14 +50,47 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           created_at: string | null
           first_name: string | null
           id: string
+          is_suspended: boolean | null
           last_name: string | null
           rfc: string | null
+          subscription_duration_days: number | null
+          subscription_end_date: string | null
           updated_at: string | null
         }
         Insert: {
@@ -65,8 +98,11 @@ export type Database = {
           created_at?: string | null
           first_name?: string | null
           id: string
+          is_suspended?: boolean | null
           last_name?: string | null
           rfc?: string | null
+          subscription_duration_days?: number | null
+          subscription_end_date?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -74,8 +110,11 @@ export type Database = {
           created_at?: string | null
           first_name?: string | null
           id?: string
+          is_suspended?: boolean | null
           last_name?: string | null
           rfc?: string | null
+          subscription_duration_days?: number | null
+          subscription_end_date?: string | null
           updated_at?: string | null
         }
         Relationships: []
