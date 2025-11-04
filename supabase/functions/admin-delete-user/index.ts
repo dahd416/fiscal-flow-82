@@ -70,7 +70,35 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Delete the user from auth (this will cascade delete from other tables)
+    // Delete all user data first (using service role to bypass RLS)
+    console.log("Deleting user data for:", userId);
+    
+    // First, get all quotation IDs for this user
+    const { data: userQuotations } = await supabase
+      .from("quotations")
+      .select("id")
+      .eq("user_id", userId);
+    
+    // Delete quotation items if there are any quotations
+    if (userQuotations && userQuotations.length > 0) {
+      const quotationIds = userQuotations.map(q => q.id);
+      await supabase.from("quotation_items").delete().in("quotation_id", quotationIds);
+    }
+    
+    // Delete in order to respect foreign keys
+    await supabase.from("quotations").delete().eq("user_id", userId);
+    await supabase.from("transactions").delete().eq("user_id", userId);
+    await supabase.from("vat_periods").delete().eq("user_id", userId);
+    await supabase.from("clients").delete().eq("user_id", userId);
+    await supabase.from("providers").delete().eq("user_id", userId);
+    await supabase.from("transaction_concepts").delete().eq("user_id", userId);
+    await supabase.from("calendar_events").delete().eq("user_id", userId);
+    await supabase.from("notifications").delete().eq("user_id", userId);
+    await supabase.from("activity_logs").delete().eq("user_id", userId);
+    await supabase.from("user_roles").delete().eq("user_id", userId);
+    await supabase.from("profiles").delete().eq("id", userId);
+
+    // Finally delete the user from auth
     const { error: deleteError } = await supabase.auth.admin.deleteUser(userId);
 
     if (deleteError) {

@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EditUserDialog } from '@/components/admin/EditUserDialog';
 import { AddUserDialog } from '@/components/admin/AddUserDialog';
+import { PasswordEditDialog } from '@/components/admin/PasswordEditDialog';
 import { UserActivityPanel } from '@/components/admin/UserActivityPanel';
 import { PlatformCustomization } from '@/components/admin/PlatformCustomization';
 import { TaxSettings } from '@/components/admin/TaxSettings';
@@ -36,7 +37,8 @@ import {
   Activity,
   Users,
   Receipt,
-  FileText
+  FileText,
+  Key
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
@@ -84,6 +86,7 @@ export default function AdminUsers() {
   const [editUser, setEditUser] = useState<UserWithRole | null>(null);
   const [addUserOpen, setAddUserOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
+  const [passwordEditUser, setPasswordEditUser] = useState<UserWithRole | null>(null);
   const [subscriptionEndDate, setSubscriptionEndDate] = useState('');
   const [subscriptionDuration, setSubscriptionDuration] = useState('30');
   const [searchQuery, setSearchQuery] = useState('');
@@ -520,6 +523,22 @@ export default function AdminUsers() {
                                       </TooltipTrigger>
                                       <TooltipContent>Editar usuario</TooltipContent>
                                     </Tooltip>
+
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setPasswordEditUser(user);
+                                          }}
+                                        >
+                                          <Key className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>Cambiar contraseña</TooltipContent>
+                                    </Tooltip>
                                     
                                     <Tooltip>
                                       <TooltipTrigger asChild>
@@ -714,6 +733,13 @@ export default function AdminUsers() {
             </div>
           </DialogContent>
         </Dialog>
+
+        <PasswordEditDialog
+          userId={passwordEditUser?.id || null}
+          userName={passwordEditUser ? getUserFullName(passwordEditUser) : ''}
+          open={!!passwordEditUser}
+          onClose={() => setPasswordEditUser(null)}
+        />
       </TooltipProvider>
     </Layout>
   );

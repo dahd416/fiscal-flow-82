@@ -53,13 +53,26 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Admin access granted for user:", user.id, "Role:", userRole.role);
 
     // Get update data
-    const { userId, email, firstName, lastName, rfc, businessName, fiscalName } = await req.json();
+    const { userId, email, firstName, lastName, rfc, businessName, fiscalName, password } = await req.json();
 
     if (!userId) {
       return new Response(
         JSON.stringify({ error: "User ID is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Update password in auth if provided
+    if (password) {
+      const { error: passwordError } = await supabase.auth.admin.updateUserById(
+        userId,
+        { password }
+      );
+
+      if (passwordError) {
+        console.error("Error updating password:", passwordError);
+        throw new Error(`Failed to update password: ${passwordError.message}`);
+      }
     }
 
     // Update email in auth if provided and changed
