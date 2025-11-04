@@ -6,9 +6,21 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/currency';
-import { TrendingUp, TrendingDown, Users, DollarSign, Activity, User, Receipt, X, Plus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Users, DollarSign, Activity, User, Receipt, X, Plus, Pencil, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AddTransactionDialog } from '@/components/admin/AddTransactionDialog';
+import { EditTransactionDialog } from '@/components/admin/EditTransactionDialog';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface Transaction {
   id: string;
@@ -16,12 +28,16 @@ interface Transaction {
   amount: number;
   subtotal: number;
   vat_amount: number;
+  vat_rate: number;
   concept: string | null;
+  description: string | null;
   folio: string | null;
   payment_method: string | null;
   is_invoice: boolean;
   transaction_date: string;
   user_id: string;
+  client_id: string | null;
+  provider_id: string | null;
   profiles: {
     first_name: string | null;
     last_name: string | null;
@@ -40,6 +56,9 @@ export function GlobalActivityPanel() {
   const [userFilter, setUserFilter] = useState<string>('all');
   const [allUsers, setAllUsers] = useState<Array<{ id: string; name: string; role: string }>>([]);
   const [addTransactionOpen, setAddTransactionOpen] = useState(false);
+  const [editTransactionOpen, setEditTransactionOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [deleteTransactionId, setDeleteTransactionId] = useState<string | null>(null);
   const [globalStats, setGlobalStats] = useState({
     totalIncome: 0,
     totalExpense: 0,
@@ -140,6 +159,29 @@ export function GlobalActivityPanel() {
       totalUsers: allUsers.length,
       totalTransactions: filtered.length,
     });
+  };
+
+  const handleEditTransaction = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setEditTransactionOpen(true);
+  };
+
+  const handleDeleteTransaction = async () => {
+    if (!deleteTransactionId) return;
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', deleteTransactionId);
+      if (error) throw error;
+      toast.success('Transacción eliminada correctamente');
+      await loadAllActivity();
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      toast.error('Error al eliminar la transacción');
+    } finally {
+      setDeleteTransactionId(null);
+    }
   };
 
   const filteredTransactions = transactions.filter(t => {
@@ -333,6 +375,7 @@ export function GlobalActivityPanel() {
                           <TableHead className="text-right w-[110px]">Subtotal</TableHead>
                           <TableHead className="text-right w-[90px]">IVA</TableHead>
                           <TableHead className="text-right w-[120px]">Total</TableHead>
+                          <TableHead className="text-center w-[120px]">Acciones</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -424,6 +467,30 @@ export function GlobalActivityPanel() {
                                   {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
                                 </span>
                               </TableCell>
+                              <TableCell>
+                                {userFilter !== 'all' ? (
+                                  <div className="flex items-center justify-center gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => handleEditTransaction(transaction)}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-destructive hover:text-destructive"
+                                      onClick={() => setDeleteTransactionId(transaction.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <div className="text-center text-muted-foreground text-xs">-</div>
+                                )}
+                              </TableCell>
                             </TableRow>
                           );
                         })}
@@ -446,6 +513,35 @@ export function GlobalActivityPanel() {
           onSuccess={loadAllActivity}
         />
       )}
+
+      {/* Edit Transaction Dialog */}
+      <EditTransactionDialog
+        transaction={selectedTransaction}
+        open={editTransactionOpen}
+        onClose={() => {
+          setEditTransactionOpen(false);
+          setSelectedTransaction(null);
+        }}
+        onSuccess={loadAllActivity}
+      />
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteTransactionId} onOpenChange={() => setDeleteTransactionId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar transacción?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. La transacción será eliminada permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteTransaction} className="bg-destructive hover:bg-destructive/90">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
