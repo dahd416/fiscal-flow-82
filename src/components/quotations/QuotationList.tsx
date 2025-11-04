@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Pencil, Trash2, FileText } from 'lucide-react';
+import { Pencil, Trash2, FileText, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { formatCurrency } from '@/lib/currency';
@@ -37,9 +37,10 @@ interface QuotationListProps {
   onEdit: (quotation: Quotation) => void;
   onDelete: (id: string) => void;
   onManageItems: (quotation: Quotation) => void;
+  onDownloadPDF: (quotation: Quotation) => void;
 }
 
-export function QuotationList({ quotations, onEdit, onDelete, onManageItems }: QuotationListProps) {
+export function QuotationList({ quotations, onEdit, onDelete, onManageItems, onDownloadPDF }: QuotationListProps) {
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: any; label: string }> = {
       draft: { variant: 'secondary', label: 'Borrador' },
@@ -99,6 +100,15 @@ export function QuotationList({ quotations, onEdit, onDelete, onManageItems }: Q
               </TableCell>
               <TableCell>
                 <div className="flex justify-end gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onDownloadPDF(quotation)}
+                    title="Descargar PDF"
+                    className="hover:bg-primary/10 hover:text-primary"
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"

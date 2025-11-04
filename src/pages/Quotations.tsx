@@ -286,6 +286,40 @@ export default function Quotations() {
     setDialogOpen(true);
   };
 
+  const handleDownloadPDF = async (quotation: Quotation) => {
+    try {
+      toast.loading('Generando PDF...');
+      
+      const { data, error } = await supabase.functions.invoke('generate-quotation-pdf', {
+        body: { quotationId: quotation.id },
+      });
+
+      if (error) throw error;
+
+      // Create blob from HTML and open in new window for printing
+      const blob = new Blob([data], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const printWindow = window.open(url, '_blank');
+      
+      if (printWindow) {
+        printWindow.onload = () => {
+          setTimeout(() => {
+            printWindow.print();
+            toast.dismiss();
+            toast.success('PDF listo para descargar');
+          }, 500);
+        };
+      } else {
+        toast.dismiss();
+        toast.error('Habilita las ventanas emergentes para descargar el PDF');
+      }
+    } catch (error: any) {
+      console.error('Error generating PDF:', error);
+      toast.dismiss();
+      toast.error('Error al generar PDF');
+    }
+  };
+
   const filteredQuotations = quotations.filter((quotation) => {
     const searchLower = searchQuery.toLowerCase();
     const clientName = quotation.clients 
@@ -354,6 +388,7 @@ export default function Quotations() {
                   onEdit={handleEdit}
                   onDelete={setDeleteQuotationId}
                   onManageItems={handleManageItems}
+                  onDownloadPDF={handleDownloadPDF}
                 />
               ) : (
                 <QuotationKanban
@@ -362,6 +397,7 @@ export default function Quotations() {
                   onDelete={setDeleteQuotationId}
                   onManageItems={handleManageItems}
                   onStatusChange={handleStatusChange}
+                  onDownloadPDF={handleDownloadPDF}
                 />
               )
             ) : (

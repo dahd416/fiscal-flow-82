@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash2, FileText, GripVertical } from 'lucide-react';
+import { Pencil, Trash2, FileText, GripVertical, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { formatCurrency } from '@/lib/currency';
@@ -32,6 +32,7 @@ interface QuotationKanbanProps {
   onDelete: (id: string) => void;
   onManageItems: (quotation: Quotation) => void;
   onStatusChange: (quotationId: string, newStatus: string) => Promise<void>;
+  onDownloadPDF: (quotation: Quotation) => void;
 }
 
 const statusColumns = [
@@ -43,7 +44,7 @@ const statusColumns = [
   { key: 'expired', label: 'Expirada', color: 'bg-muted/20 border-muted' },
 ];
 
-export function QuotationKanban({ quotations, onEdit, onDelete, onManageItems, onStatusChange }: QuotationKanbanProps) {
+export function QuotationKanban({ quotations, onEdit, onDelete, onManageItems, onStatusChange, onDownloadPDF }: QuotationKanbanProps) {
   const [draggedOver, setDraggedOver] = useState<string | null>(null);
 
   const getQuotationsByStatus = (status: string) => {
@@ -180,6 +181,18 @@ export function QuotationKanban({ quotations, onEdit, onDelete, onManageItems, o
                       </div>
 
                       <div className="flex gap-1 pt-2 border-t">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDownloadPDF(quotation);
+                          }}
+                          className="flex-1 hover:bg-primary/10 hover:text-primary"
+                          title="Descargar PDF"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
