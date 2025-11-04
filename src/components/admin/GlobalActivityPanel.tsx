@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/currency';
-import { TrendingUp, TrendingDown, Users, DollarSign, Activity, User } from 'lucide-react';
+import { TrendingUp, TrendingDown, Users, DollarSign, Activity, User, Receipt, X } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Transaction {
@@ -27,6 +27,7 @@ interface Transaction {
   clients: {
     first_name: string;
     last_name: string | null;
+    vat_number: string | null;
   } | null;
   quotations: { quotation_number: string; title: string } | null;
 }
@@ -92,7 +93,7 @@ export function GlobalActivityPanel() {
         .from('transactions')
         .select(`
           *,
-          clients(first_name, last_name),
+          clients(first_name, last_name, vat_number),
           quotations(quotation_number, title)
         `)
         .in('type', ['income', 'expense'])
@@ -309,6 +310,8 @@ export function GlobalActivityPanel() {
                           <TableHead className="w-[90px]">Tipo</TableHead>
                           <TableHead className="min-w-[200px]">Concepto</TableHead>
                           <TableHead className="w-[150px]">Cliente</TableHead>
+                          <TableHead className="w-[130px]">RFC</TableHead>
+                          <TableHead className="w-[80px] text-center">Factura</TableHead>
                           <TableHead className="text-right w-[110px]">Subtotal</TableHead>
                           <TableHead className="text-right w-[90px]">IVA</TableHead>
                           <TableHead className="text-right w-[120px]">Total</TableHead>
@@ -364,6 +367,30 @@ export function GlobalActivityPanel() {
                                   </div>
                                 ) : (
                                   <span className="text-muted-foreground text-sm">Sin cliente</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {transaction.clients?.vat_number ? (
+                                  <div className="font-mono text-sm">
+                                    {transaction.clients.vat_number}
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {transaction.type === 'income' && transaction.is_invoice ? (
+                                  <Badge className="gap-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                    <Receipt className="h-3 w-3" />
+                                    Sí
+                                  </Badge>
+                                ) : transaction.type === 'income' ? (
+                                  <Badge variant="outline" className="gap-1">
+                                    <X className="h-3 w-3" />
+                                    No
+                                  </Badge>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">-</span>
                                 )}
                               </TableCell>
                               <TableCell className="text-right whitespace-nowrap">
