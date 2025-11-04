@@ -120,6 +120,9 @@ export default function Transactions() {
 
   const handleProviderSearchChange = (value: string) => {
     setProviderSearchText(value);
+    // Si el texto cambia, limpiar la selección actual
+    setFormData({ ...formData, provider_id: '' });
+    
     if (value.trim()) {
       const filtered = providers.filter(p => 
         p.name.toLowerCase().includes(value.toLowerCase())
@@ -129,7 +132,6 @@ export default function Transactions() {
     } else {
       setFilteredProviders(providers);
       setShowProviderSuggestions(false);
-      setFormData({ ...formData, provider_id: '' });
     }
   };
 
@@ -366,6 +368,12 @@ export default function Transactions() {
       return;
     }
 
+    // Validar que si es gasto y hay texto en proveedor, debe haber un provider_id seleccionado
+    if (formData.type === 'expense' && providerSearchText && !formData.provider_id) {
+      toast.error('Por favor selecciona un proveedor de la lista o créalo primero');
+      return;
+    }
+
     let subtotal: number;
     let total: number;
     let vatAmount: number;
@@ -581,56 +589,129 @@ export default function Transactions() {
                     </Select>
                   </div>
                 ) : (
-                  <div className="space-y-2 relative">
-                    <Label htmlFor="provider">Proveedor</Label>
-                    <Input
-                      id="provider"
-                      value={providerSearchText}
-                      onChange={(e) => handleProviderSearchChange(e.target.value)}
-                      onFocus={() => {
-                        if (providers.length > 0) {
-                          setFilteredProviders(providers);
-                          setShowProviderSuggestions(true);
-                        }
-                      }}
-                      onBlur={() => {
-                        setTimeout(() => setShowProviderSuggestions(false), 200);
-                      }}
-                      placeholder="Buscar o crear proveedor"
-                    />
-                    {showProviderSuggestions && filteredProviders.length > 0 && (
-                      <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-auto">
-                        {filteredProviders.map((provider) => (
-                          <div
-                            key={provider.id}
-                            className="px-3 py-2 hover:bg-accent cursor-pointer text-sm flex items-center justify-between group"
-                            onClick={() => selectProvider(provider)}
-                          >
-                            <span className="flex-1">{provider.name}</span>
-                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0"
-                                onClick={(e) => handleEditProvider(e, provider)}
-                              >
-                                <Pencil className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                                onClick={(e) => handleDeleteProvider(e, provider.id)}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
+                  <div className="space-y-4">
+                    <div className="space-y-2 relative">
+                      <Label htmlFor="provider">Proveedor</Label>
+                      <Input
+                        id="provider"
+                        value={providerSearchText}
+                        onChange={(e) => handleProviderSearchChange(e.target.value)}
+                        onFocus={() => {
+                          if (providers.length > 0) {
+                            setFilteredProviders(providers);
+                            setShowProviderSuggestions(true);
+                          }
+                        }}
+                        onBlur={() => {
+                          setTimeout(() => setShowProviderSuggestions(false), 200);
+                        }}
+                        placeholder="Buscar proveedor (requerido para gastos)"
+                      />
+                      {formData.provider_id && (
+                        <p className="text-xs text-green-600">✓ Proveedor seleccionado</p>
+                      )}
+                      {showProviderSuggestions && filteredProviders.length > 0 && (
+                        <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-auto">
+                          {filteredProviders.map((provider) => (
+                            <div
+                              key={provider.id}
+                              className="px-3 py-2 hover:bg-accent cursor-pointer text-sm flex items-center justify-between group"
+                              onClick={() => selectProvider(provider)}
+                            >
+                              <span className="flex-1">{provider.name}</span>
+                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={(e) => handleEditProvider(e, provider)}
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                  onClick={(e) => handleDeleteProvider(e, provider.id)}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
                             </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="text-xs text-muted-foreground">
+                      💡 Si el proveedor no existe, créalo usando el botón "Nuevo Proveedor" abajo
+                    </div>
+
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button type="button" variant="outline" size="sm" className="w-full gap-2">
+                          <Plus className="h-3 w-3" />
+                          Nuevo Proveedor
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Crear Nuevo Proveedor</DialogTitle>
+                        </DialogHeader>
+                        <form onSubmit={async (e) => {
+                          e.preventDefault();
+                          const formData = new FormData(e.currentTarget);
+                          const name = formData.get('name') as string;
+                          const vat_number = formData.get('vat_number') as string;
+                          const phone = formData.get('phone') as string;
+                          const email = formData.get('email') as string;
+                          const address = formData.get('address') as string;
+
+                          const { data, error } = await supabase.from('providers').insert([{
+                            user_id: user!.id,
+                            name,
+                            vat_number: vat_number || null,
+                            phone: phone || null,
+                            email: email || null,
+                            address: address || null,
+                          }]).select().single();
+
+                          if (error) {
+                            toast.error('Error al crear proveedor');
+                          } else {
+                            toast.success('Proveedor creado exitosamente');
+                            await fetchData();
+                            // Seleccionar automáticamente el nuevo proveedor
+                            setProviderSearchText(data.name);
+                            setFormData(prev => ({ ...prev, provider_id: data.id }));
+                          }
+                        }} className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="new-provider-name">Nombre *</Label>
+                            <Input id="new-provider-name" name="name" required />
                           </div>
-                        ))}
-                      </div>
-                    )}
+                          <div className="space-y-2">
+                            <Label htmlFor="new-provider-vat">RFC</Label>
+                            <Input id="new-provider-vat" name="vat_number" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="new-provider-phone">Teléfono</Label>
+                            <Input id="new-provider-phone" name="phone" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="new-provider-email">Email</Label>
+                            <Input id="new-provider-email" name="email" type="email" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="new-provider-address">Dirección</Label>
+                            <Input id="new-provider-address" name="address" />
+                          </div>
+                          <Button type="submit" className="w-full">Crear Proveedor</Button>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 )}
 
