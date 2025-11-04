@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { DollarSign, Users, Receipt, TrendingUp, TrendingDown, Wallet, CreditCard, AlertCircle, PiggyBank, FileText, Shield, Calendar, X } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell, PieChart, Pie } from 'recharts';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency, formatPercentage } from '@/lib/currency';
 
@@ -248,6 +248,42 @@ export default function Dashboard() {
       icon: Wallet,
       colorClass: 'text-[hsl(var(--primary))]',
       bgClass: 'bg-[hsl(var(--primary)/0.1)]',
+    },
+  ];
+
+  const rentabilidadChartData = [
+    {
+      name: 'Saldo Inicial',
+      valor: stats.saldoInicial,
+      fill: 'hsl(var(--primary))',
+    },
+    {
+      name: 'Utilidad antes de Impuestos',
+      valor: stats.utilidadAntesImpuestos,
+      fill: stats.utilidadAntesImpuestos >= 0 ? 'hsl(142.1 76.2% 36.3%)' : 'hsl(0 84.2% 60.2%)',
+    },
+    {
+      name: 'Utilidad después de Impuestos',
+      valor: stats.utilidadDespuesImpuestos,
+      fill: stats.utilidadDespuesImpuestos >= 0 ? 'hsl(142.1 70% 50%)' : 'hsl(0 70% 50%)',
+    },
+    {
+      name: 'Dinero Disponible',
+      valor: stats.dineroDisponible,
+      fill: 'hsl(221.2 83.2% 53.3%)',
+    },
+  ];
+
+  const liquidezChartData = [
+    {
+      name: 'Efectivo',
+      value: stats.efectivo,
+      fill: 'hsl(142.1 76.2% 36.3%)',
+    },
+    {
+      name: 'Tarjeta',
+      value: stats.tarjeta,
+      fill: 'hsl(221.2 83.2% 53.3%)',
     },
   ];
 
@@ -526,6 +562,44 @@ export default function Dashboard() {
             <h3 className="text-xl font-semibold">Análisis de Rentabilidad</h3>
             <p className="text-sm text-muted-foreground">Métricas de desempeño financiero</p>
           </div>
+          
+          {/* Gráfico de Rentabilidad */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Comparativa de Rentabilidad</CardTitle>
+              <CardDescription>Evolución de utilidades y capital disponible</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart data={rentabilidadChartData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis 
+                    dataKey="name" 
+                    className="text-xs"
+                    angle={-15}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <YAxis className="text-sm" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--popover))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '0.5rem',
+                    }}
+                    formatter={(value: number) => formatCurrency(value)}
+                  />
+                  <Bar dataKey="valor" radius={[8, 8, 0, 0]}>
+                    {rentabilidadChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Métricas de Rentabilidad */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {rentabilidadCards.map((card) => {
               const Icon = card.icon;
@@ -592,25 +666,65 @@ export default function Dashboard() {
             <h3 className="text-xl font-semibold">Liquidez</h3>
             <p className="text-sm text-muted-foreground">Distribución de efectivo disponible</p>
           </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {liquidezCards.map((card) => {
-              const Icon = card.icon;
-              return (
-                <Card key={card.title}>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      {card.title}
-                    </CardTitle>
-                    <Icon className={`h-4 w-4 ${card.colorClass || 'text-muted-foreground'}`} />
-                  </CardHeader>
-                  <CardContent>
-                    <div className={`text-2xl font-bold ${card.colorClass || ''}`}>
-                      {card.value}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+          
+          {/* Gráfico de Liquidez */}
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Distribución de Liquidez</CardTitle>
+                <CardDescription>Efectivo vs Tarjeta</CardDescription>
+              </CardHeader>
+              <CardContent className="flex items-center justify-center">
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={liquidezChartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={5}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {liquidezChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--popover))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '0.5rem',
+                      }}
+                      formatter={(value: number) => formatCurrency(value)}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Métricas de Liquidez */}
+            <div className="grid gap-4 md:grid-cols-2">
+              {liquidezCards.map((card) => {
+                const Icon = card.icon;
+                return (
+                  <Card key={card.title}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">
+                        {card.title}
+                      </CardTitle>
+                      <Icon className={`h-4 w-4 ${card.colorClass || 'text-muted-foreground'}`} />
+                    </CardHeader>
+                    <CardContent>
+                      <div className={`text-2xl font-bold ${card.colorClass || ''}`}>
+                        {card.value}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           </div>
         </div>
 
