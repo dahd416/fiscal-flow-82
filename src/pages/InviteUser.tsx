@@ -79,7 +79,7 @@ export default function InviteUser() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/admin/users')}
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
