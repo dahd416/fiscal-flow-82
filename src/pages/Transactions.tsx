@@ -59,6 +59,7 @@ export default function Transactions() {
     address: '',
   });
   const [editConceptText, setEditConceptText] = useState('');
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [formData, setFormData] = useState({
     type: 'income',
     amount: '',
@@ -290,6 +291,73 @@ export default function Transactions() {
     }
   };
 
+  const handleEditTransaction = (transaction: Transaction) => {
+    setEditingTransaction(transaction);
+    
+    // Pre-cargar el nombre del proveedor en el campo de búsqueda si es un gasto
+    if (transaction.type === 'expense' && transaction.providers) {
+      setProviderSearchText(transaction.providers.name);
+    }
+
+    // Calcular el amount según el tipo
+    let amountValue: string;
+    if (transaction.type === 'expense') {
+      // Para gastos, mostrar el total (ya está en transaction.amount)
+      amountValue = transaction.amount.toString();
+    } else {
+      // Para ingresos, mostrar el subtotal
+      amountValue = transaction.subtotal.toString();
+    }
+
+    setFormData({
+      type: transaction.type,
+      amount: amountValue,
+      vat_rate: transaction.vat_rate.toString(),
+      concept: transaction.concept || '',
+      description: transaction.description || '',
+      folio: transaction.folio || '',
+      payment_method: transaction.payment_method || '',
+      is_invoice: transaction.is_invoice,
+      transaction_date: transaction.transaction_date,
+      client_id: transaction.client_id || '',
+      provider_id: transaction.provider_id || '',
+      quotation_id: transaction.quotation_id || '',
+    });
+    setOpen(true);
+  };
+
+  const handleDeleteTransaction = async (id: string) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar esta transacción?')) return;
+
+    const { error } = await supabase.from('transactions').delete().eq('id', id);
+    
+    if (error) {
+      toast.error('Error al eliminar transacción');
+    } else {
+      toast.success('Transacción eliminada exitosamente');
+      fetchData();
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      type: 'income',
+      amount: '',
+      vat_rate: '16',
+      concept: '',
+      description: '',
+      folio: '',
+      payment_method: '',
+      is_invoice: false,
+      transaction_date: new Date().toISOString().split('T')[0],
+      client_id: '',
+      provider_id: '',
+      quotation_id: '',
+    });
+    setEditingTransaction(null);
+    setProviderSearchText('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -321,45 +389,44 @@ export default function Transactions() {
       await saveOrUpdateConcept(formData.concept);
     }
 
-    const { error } = await supabase.from('transactions').insert([
-      {
-        user_id: user!.id,
-        type: formData.type,
-        subtotal,
-        amount: total,
-        vat_rate: vatRate,
-        vat_amount: vatAmount,
-        concept: formData.concept || null,
-        description: formData.description || null,
-        folio: formData.folio || null,
-        payment_method: formData.payment_method || null,
-        is_invoice: formData.is_invoice,
-        transaction_date: formData.transaction_date,
-        client_id: formData.type === 'income' ? (formData.client_id || null) : null,
-        provider_id: formData.type === 'expense' ? (formData.provider_id || null) : null,
-        quotation_id: formData.quotation_id || null,
-      }
-    ]);
+    const transactionData = {
+      user_id: user!.id,
+      type: formData.type,
+      subtotal,
+      amount: total,
+      vat_rate: vatRate,
+      vat_amount: vatAmount,
+      concept: formData.concept || null,
+      description: formData.description || null,
+      folio: formData.folio || null,
+      payment_method: formData.payment_method || null,
+      is_invoice: formData.is_invoice,
+      transaction_date: formData.transaction_date,
+      client_id: formData.type === 'income' ? (formData.client_id || null) : null,
+      provider_id: formData.type === 'expense' ? (formData.provider_id || null) : null,
+      quotation_id: formData.quotation_id || null,
+    };
+
+    let error;
+    if (editingTransaction) {
+      // Actualizar transacción existente
+      const result = await supabase
+        .from('transactions')
+        .update(transactionData)
+        .eq('id', editingTransaction.id);
+      error = result.error;
+    } else {
+      // Crear nueva transacción
+      const result = await supabase.from('transactions').insert([transactionData]);
+      error = result.error;
+    }
 
     if (error) {
-      toast.error('Error al agregar transacción');
+      toast.error(editingTransaction ? 'Error al actualizar transacción' : 'Error al agregar transacción');
     } else {
-      toast.success('Transacción agregada exitosamente');
+      toast.success(editingTransaction ? 'Transacción actualizada exitosamente' : 'Transacción agregada exitosamente');
       setOpen(false);
-      setFormData({
-        type: 'income',
-        amount: '',
-        vat_rate: '16',
-        concept: '',
-        description: '',
-        folio: '',
-        payment_method: '',
-        is_invoice: false,
-        transaction_date: new Date().toISOString().split('T')[0],
-        client_id: '',
-        provider_id: '',
-        quotation_id: '',
-      });
+      resetForm();
       fetchData();
     }
   };
@@ -372,7 +439,10 @@ export default function Transactions() {
             <h2 className="text-3xl font-bold tracking-tight">Transacciones</h2>
             <p className="text-muted-foreground">Rastrea todos tus ingresos y gastos</p>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={(isOpen) => {
+            setOpen(isOpen);
+            if (!isOpen) resetForm();
+          }}>
             <DialogTrigger asChild>
               <Button className="gap-2">
                 <Plus className="h-4 w-4" />
@@ -381,7 +451,9 @@ export default function Transactions() {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Agregar Nueva Transacción</DialogTitle>
+                <DialogTitle>
+                  {editingTransaction ? 'Editar Transacción' : 'Agregar Nueva Transacción'}
+                </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
@@ -635,7 +707,9 @@ export default function Transactions() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full">Agregar Transacción</Button>
+                <Button type="submit" className="w-full">
+                  {editingTransaction ? 'Actualizar Transacción' : 'Agregar Transacción'}
+                </Button>
               </form>
             </DialogContent>
           </Dialog>
@@ -732,6 +806,7 @@ export default function Transactions() {
                 <TableHead className="text-right">Subtotal</TableHead>
                 <TableHead className="text-right">IVA</TableHead>
                 <TableHead className="text-right">Total</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -797,6 +872,26 @@ export default function Transactions() {
                   </TableCell>
                   <TableCell className="text-right font-medium">
                     {formatCurrency(transaction.amount)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditTransaction(transaction)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteTransaction(transaction.id)}
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
