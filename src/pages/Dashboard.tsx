@@ -154,14 +154,28 @@ export default function Dashboard() {
       // Dinero Disponible (Dinero Accesible = COBRADO - Resguardo IVA)
       const dineroDisponible = ingresos - resguardoImpuestos;
       
-      // Efectivo y Tarjeta (distribución 50/50 por defecto, se puede ajustar)
-      const efectivo = dineroDisponible * 0.5;
-      const tarjeta = dineroDisponible * 0.5;
+      // Efectivo: suma de ingresos en efectivo menos egresos en efectivo
+      const ingresosEfectivo = transactions
+        .filter(t => t.type === 'income' && (t.payment_method === 'cash' || t.payment_method === 'efectivo'))
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+      const egresosEfectivo = transactions
+        .filter(t => t.type === 'expense' && (t.payment_method === 'cash' || t.payment_method === 'efectivo'))
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+      const efectivo = ingresosEfectivo - egresosEfectivo;
       
-      // Total
+      // Tarjeta: suma de ingresos en tarjeta menos egresos en tarjeta
+      const ingresosTarjeta = transactions
+        .filter(t => t.type === 'income' && (t.payment_method === 'card' || t.payment_method === 'tarjeta'))
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+      const egresosTarjeta = transactions
+        .filter(t => t.type === 'expense' && (t.payment_method === 'card' || t.payment_method === 'tarjeta'))
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+      const tarjeta = ingresosTarjeta - egresosTarjeta;
+      
+      // Total de liquidez real (efectivo + tarjeta)
       const total = efectivo + tarjeta;
       
-      // Diferencia
+      // Diferencia: diferencia entre el total real de liquidez y el dinero disponible calculado
       const diferencia = total - dineroDisponible;
 
       setStats({
