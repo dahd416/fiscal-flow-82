@@ -28,34 +28,25 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Auth client bound to the incoming JWT
-    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
+    // Extract user id from verified JWT (Supabase verifies the JWT before invoking this function)
     const token = authHeader.replace("Bearer ", "");
-
-    let user = null as any;
-    // Try with anon client passing the token explicitly
-    const { data: anonUserRes, error: anonErr } = await supabaseAuth.auth.getUser(token);
-    if (!anonErr && anonUserRes?.user) {
-      user = anonUserRes.user;
-    } else {
-      // Fallback: try with service client as well
-      const { data: svcUserRes, error: svcErr } = await supabase.auth.getUser(token);
-      if (!svcErr && svcUserRes?.user) {
-        user = svcUserRes.user;
-      }
-      if (anonErr) console.log("Anon getUser error:", anonErr?.message || anonErr);
-      if (svcErr) console.log("Service getUser error:", svcErr?.message || svcErr);
+    let userId: string | null = null;
+    try {
+      const payloadB64 = token.split(".")[1];
+      const payload = JSON.parse(atob(payloadB64));
+      userId = payload?.sub ?? null;
+    } catch (e) {
+      console.log("JWT parse error", e);
     }
 
-    if (!user) {
+    if (!userId) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const user = { id: userId };
 
     // Check if user is admin or super_admin
     const { data: userRole, error: roleError } = await supabase
