@@ -64,12 +64,14 @@ export default function Dashboard() {
     const fetchStats = async () => {
       const dateFilter = getDateFilter();
       
-      const [clientsRes, transactionsRes] = await Promise.all([
+      const [clientsRes, transactionsRes, clientsDataRes] = await Promise.all([
         supabase.from('clients').select('*', { count: 'exact', head: true }),
-        supabase.from('transactions').select('*'),
+        supabase.from('transactions').select('*, clients(person_type)'),
+        supabase.from('clients').select('*'),
       ]);
 
       let transactions = transactionsRes.data || [];
+      const clientsData = clientsDataRes.data || [];
       
       // Aplicar filtro de fechas si existe
       if (dateFilter) {
@@ -109,8 +111,20 @@ export default function Dashboard() {
       // Utilidad antes de Impuestos
       const utilidadAntesImpuestos = ingresos - egresos;
       
-      // Resguardo de Impuestos (30% de la utilidad)
-      const resguardoImpuestos = utilidadAntesImpuestos * 0.30;
+      // Resguardo de IVA según tipo de cliente
+      const resguardoImpuestos = transactions
+        .filter(t => t.type === 'income' && t.is_invoice === true)
+        .reduce((sum, t) => {
+          const client = clientsData.find(c => c.id === t.client_id);
+          const personType = client?.person_type;
+          
+          // Si es Persona Física: COBRADO × 16/116
+          if (personType === 'Persona Física') {
+            return sum + (Number(t.amount) * 16 / 116);
+          }
+          // Si es Persona Moral: 0
+          return sum;
+        }, 0);
       
       // Impuestos a pagar (IVA recaudado)
       const impuestosAPagar = transactions
@@ -128,8 +142,8 @@ export default function Dashboard() {
       // Rendimiento (porcentaje de utilidad sobre ingresos)
       const rendimiento = ingresos > 0 ? (utilidadAntesImpuestos / ingresos) * 100 : 0;
       
-      // Dinero Disponible
-      const dineroDisponible = saldoInicial + utilidadDespuesImpuestos;
+      // Dinero Disponible (Dinero Accesible = COBRADO - Resguardo IVA)
+      const dineroDisponible = ingresos - resguardoImpuestos;
       
       // Efectivo y Tarjeta (distribución 50/50 por defecto, se puede ajustar)
       const efectivo = dineroDisponible * 0.5;
@@ -238,7 +252,7 @@ export default function Dashboard() {
 
   const impuestosCards = [
     {
-      title: 'Resguardo de Impuestos (30%)',
+      title: 'Resguardo de IVA',
       value: formatCurrency(stats.resguardoImpuestos),
       icon: AlertCircle,
       colorClass: 'text-[hsl(var(--warning))]',
