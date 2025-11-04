@@ -65,17 +65,14 @@ export function GlobalActivityPanel() {
 
       const { data: rolesData, error: rolesError } = await supabase
         .from('user_roles')
-        .select('user_id, role')
-        .in('role', ['admin', 'user']);
+        .select('user_id, role');
 
       if (rolesError) throw rolesError;
 
       // Create a map of users with their roles
       const usersWithRoles = (profilesData || [])
         .filter(profile => {
-          const hasRole = rolesData?.some(r => 
-            r.user_id === profile.id && (r.role === 'admin' || r.role === 'user')
-          );
+          const hasRole = rolesData?.some(r => r.user_id === profile.id);
           return hasRole;
         })
         .map(profile => {
@@ -266,7 +263,7 @@ export function GlobalActivityPanel() {
                       <div className="flex items-center gap-2">
                         <span>{user.name}</span>
                         <Badge variant="outline" className="text-xs">
-                          {user.role === 'admin' ? 'Admin' : 'Usuario'}
+                          {user.role === 'super_admin' ? 'Super Admin' : user.role === 'admin' ? 'Admin' : 'Usuario'}
                         </Badge>
                       </div>
                     </SelectItem>
@@ -314,7 +311,7 @@ export function GlobalActivityPanel() {
                           <TableHead className="w-[150px]">Cliente</TableHead>
                           <TableHead className="text-right w-[110px]">Subtotal</TableHead>
                           <TableHead className="text-right w-[90px]">IVA</TableHead>
-                          <TableHead className="text-right w-[110px]">Total</TableHead>
+                          <TableHead className="text-right w-[120px]">Total</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -376,11 +373,6 @@ export function GlobalActivityPanel() {
                               </TableCell>
                               <TableCell className="text-right text-muted-foreground whitespace-nowrap">
                                 {formatCurrency(transaction.vat_amount)}
-                              </TableCell>
-                              <TableCell className="text-right font-bold whitespace-nowrap">
-                                <span className={transaction.type === 'income' ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}>
-                                  {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
-                                </span>
                               </TableCell>
                               <TableCell className="text-right font-bold whitespace-nowrap">
                                 <span className={transaction.type === 'income' ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}>
