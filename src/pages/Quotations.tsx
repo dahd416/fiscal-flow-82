@@ -21,6 +21,7 @@ import { QuotationDialog } from '@/components/quotations/QuotationDialog';
 import { QuotationItemsManager } from '@/components/quotations/QuotationItemsManager';
 import { QuotationList } from '@/components/quotations/QuotationList';
 import { QuotationKanban } from '@/components/quotations/QuotationKanban';
+import { PDFPreviewDialog } from '@/components/quotations/PDFPreviewDialog';
 import { toast } from 'sonner';
 import { Plus, Search, LayoutList, LayoutGrid } from 'lucide-react';
 
@@ -73,6 +74,9 @@ export default function Quotations() {
   const [currentQuotationId, setCurrentQuotationId] = useState<string | null>(null);
   const [quotationItems, setQuotationItems] = useState<QuotationItem[]>([]);
   const [deleteQuotationId, setDeleteQuotationId] = useState<string | null>(null);
+  const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
+  const [pdfHtmlContent, setPdfHtmlContent] = useState('');
+  const [currentQuotationNumber, setCurrentQuotationNumber] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -296,23 +300,10 @@ export default function Quotations() {
 
       if (error) throw error;
 
-      // Create blob from HTML and open in new window for printing
-      const blob = new Blob([data], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const printWindow = window.open(url, '_blank');
-      
-      if (printWindow) {
-        printWindow.onload = () => {
-          setTimeout(() => {
-            printWindow.print();
-            toast.dismiss();
-            toast.success('PDF listo para descargar');
-          }, 500);
-        };
-      } else {
-        toast.dismiss();
-        toast.error('Habilita las ventanas emergentes para descargar el PDF');
-      }
+      toast.dismiss();
+      setPdfHtmlContent(data);
+      setCurrentQuotationNumber(quotation.quotation_number);
+      setPdfPreviewOpen(true);
     } catch (error: any) {
       console.error('Error generating PDF:', error);
       toast.dismiss();
@@ -462,6 +453,13 @@ export default function Quotations() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PDFPreviewDialog
+        open={pdfPreviewOpen}
+        onClose={() => setPdfPreviewOpen(false)}
+        htmlContent={pdfHtmlContent}
+        quotationNumber={currentQuotationNumber}
+      />
     </Layout>
   );
 }

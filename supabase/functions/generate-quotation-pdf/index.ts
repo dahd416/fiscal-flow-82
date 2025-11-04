@@ -80,12 +80,20 @@ function generatePDFHTML(quotation: QuotationData, profile: ProfileData): string
       box-sizing: border-box;
     }
     
+    @page {
+      size: letter;
+      margin: 0.5in;
+    }
+    
     body {
       font-family: 'Helvetica Neue', Arial, sans-serif;
       color: #2c3e50;
       line-height: 1.6;
-      padding: 40px;
+      padding: 30px;
       background: #ffffff;
+      width: 8.5in;
+      max-width: 8.5in;
+      margin: 0 auto;
     }
     
     .header {
