@@ -6,12 +6,24 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/currency';
-import { TrendingUp, TrendingDown, ArrowUpDown, Calendar, FileText, BarChart3, PieChart, User, Plus } from 'lucide-react';
+import { TrendingUp, TrendingDown, ArrowUpDown, Calendar, FileText, BarChart3, PieChart, User, Plus, Pencil, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { AddTransactionDialog } from '@/components/admin/AddTransactionDialog';
+import { EditTransactionDialog } from '@/components/admin/EditTransactionDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 interface Transaction {
   id: string;
@@ -19,9 +31,16 @@ interface Transaction {
   amount: number;
   subtotal: number;
   vat_amount: number;
+  vat_rate: number;
   concept: string | null;
-  clients: { first_name: string; last_name: string | null } | null;
+  description: string | null;
+  folio: string | null;
+  payment_method: string | null;
+  is_invoice: boolean;
   transaction_date: string;
+  client_id: string | null;
+  provider_id: string | null;
+  clients: { first_name: string; last_name: string | null } | null;
   quotations: { quotation_number: string; title: string } | null;
 }
 
@@ -44,6 +63,9 @@ export function UserActivityPanel({ userId, userName }: UserActivityPanelProps) 
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [addTransactionOpen, setAddTransactionOpen] = useState(false);
+  const [editTransactionOpen, setEditTransactionOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [deleteTransactionId, setDeleteTransactionId] = useState<string | null>(null);
   const [stats, setStats] = useState({
     totalIncome: 0,
     totalExpense: 0,
@@ -68,7 +90,11 @@ export function UserActivityPanel({ userId, userName }: UserActivityPanelProps) 
       setLoading(true);
       const { data, error } = await supabase
         .from('transactions')
-        .select('*, quotations(quotation_number, title)')
+        .select(`
+          *,
+          clients(first_name, last_name),
+          quotations(quotation_number, title)
+        `)
         .eq('user_id', userId)
         .order('transaction_date', { ascending: false });
 
@@ -154,6 +180,32 @@ export function UserActivityPanel({ userId, userName }: UserActivityPanelProps) 
     setTypeFilter('all');
     setStartDate('');
     setEndDate('');
+  };
+
+  const handleEditTransaction = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setEditTransactionOpen(true);
+  };
+
+  const handleDeleteTransaction = async () => {
+    if (!deleteTransactionId) return;
+
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', deleteTransactionId);
+
+      if (error) throw error;
+
+      toast.success('Transacción eliminada correctamente');
+      loadUserActivity();
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      toast.error('Error al eliminar la transacción');
+    } finally {
+      setDeleteTransactionId(null);
+    }
   };
 
   const filteredTransactions = getFilteredTransactions();
@@ -381,6 +433,7 @@ export function UserActivityPanel({ userId, userName }: UserActivityPanelProps) 
                           <TableHead className="text-right w-[120px]">Subtotal</TableHead>
                           <TableHead className="text-right w-[100px]">IVA</TableHead>
                           <TableHead className="text-right w-[120px]">Total</TableHead>
+                          <TableHead className="text-center w-[120px]">Acciones</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -448,6 +501,26 @@ export function UserActivityPanel({ userId, userName }: UserActivityPanelProps) 
                               <span className={transaction.type === 'income' ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}>
                                 {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
                               </span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center justify-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => handleEditTransaction(transaction)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                  onClick={() => setDeleteTransactionId(transaction.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -548,6 +621,36 @@ export function UserActivityPanel({ userId, userName }: UserActivityPanelProps) 
         userName={userName}
         onSuccess={loadUserActivity}
       />
+
+      {/* Edit Transaction Dialog */}
+      <EditTransactionDialog
+        transaction={selectedTransaction}
+        open={editTransactionOpen}
+        onClose={() => {
+          setEditTransactionOpen(false);
+          setSelectedTransaction(null);
+        }}
+        onSuccess={loadUserActivity}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteTransactionId} onOpenChange={() => setDeleteTransactionId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar transacción?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. La transacción será eliminada permanentemente
+              y los registros de auditoría mantendrán un historial de esta acción.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteTransaction} className="bg-destructive hover:bg-destructive/90">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
