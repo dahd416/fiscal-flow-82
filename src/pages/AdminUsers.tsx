@@ -34,7 +34,8 @@ import {
   Crown,
   Activity,
   Users,
-  Receipt
+  Receipt,
+  FileText
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
@@ -332,7 +333,7 @@ export default function AdminUsers() {
           </div>
 
           <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full max-w-3xl grid-cols-4">
+            <TabsList className="grid w-full max-w-4xl grid-cols-5">
               <TabsTrigger value="users" className="gap-2">
                 <Users className="h-4 w-4" />
                 Usuarios
@@ -340,6 +341,12 @@ export default function AdminUsers() {
               <TabsTrigger value="activity" className="gap-2">
                 <Activity className="h-4 w-4" />
                 Actividad
+              </TabsTrigger>
+              <TabsTrigger value="logs" asChild>
+                <Link to="/admin/activity-logs" className="gap-2">
+                  <FileText className="h-4 w-4" />
+                  Registros
+                </Link>
               </TabsTrigger>
               <TabsTrigger value="customization" className="gap-2">
                 <Shield className="h-4 w-4" />
