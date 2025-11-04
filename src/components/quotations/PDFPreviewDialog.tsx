@@ -9,6 +9,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Download, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 interface PDFPreviewDialogProps {
   open: boolean;
@@ -71,6 +73,53 @@ export function PDFPreviewDialog({
     }
   };
 
+  const handleExportPDF = async () => {
+    try {
+      toast.loading('Generando PDF...');
+      const iframe = iframeRef.current;
+      const doc = iframe?.contentDocument || iframe?.contentWindow?.document;
+      if (!doc) throw new Error('Documento no disponible');
+      const element = doc.body as HTMLElement;
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff',
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const pdf = new jsPDF('p', 'pt', 'letter');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+
+      pdf.save(`Cotizacion_${quotationNumber || 'archivo'}.pdf`);
+      toast.dismiss();
+      toast.success('PDF descargado');
+    } catch (error) {
+      console.error('Export PDF error:', error);
+      toast.dismiss();
+      toast.error('No se pudo descargar el PDF');
+    }
+  };
   const handleClose = () => {
     setLoading(true);
     onClose();
@@ -90,6 +139,15 @@ export function PDFPreviewDialog({
             <div className="flex items-center gap-2">
               <Button
                 onClick={handleDownloadPDF}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Imprimir / Guardar
+              </Button>
+              <Button
+                onClick={handleExportPDF}
                 variant="default"
                 size="sm"
                 className="gap-2"
