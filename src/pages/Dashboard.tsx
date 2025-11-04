@@ -32,6 +32,7 @@ export default function Dashboard() {
     resguardoImpuestos: 0,
     impuestosAPagar: 0,
     utilidadDespuesImpuestos: 0,
+    totalAnualFacturado: 0,
     rendimiento: 0,
     dineroDisponible: 0,
     efectivo: 0,
@@ -116,6 +117,11 @@ export default function Dashboard() {
         .filter(t => t.type === 'income')
         .reduce((sum, t) => sum + Number(t.vat_amount), 0);
       
+      // Total Anual Facturado (solo ingresos con factura)
+      const totalAnualFacturado = transactions
+        .filter(t => t.type === 'income' && t.is_invoice === true)
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+      
       // Utilidad después de Impuestos
       const utilidadDespuesImpuestos = utilidadAntesImpuestos - resguardoImpuestos;
       
@@ -147,6 +153,7 @@ export default function Dashboard() {
         resguardoImpuestos,
         impuestosAPagar,
         utilidadDespuesImpuestos,
+        totalAnualFacturado,
         rendimiento,
         dineroDisponible,
         efectivo,
@@ -192,17 +199,17 @@ export default function Dashboard() {
       bgClass: 'bg-[hsl(var(--destructive)/0.1)]',
     },
     {
-      title: 'Utilidad Después de Impuestos',
-      value: formatCurrency(stats.utilidadDespuesImpuestos),
-      description: 'Ganancia neta disponible',
-      icon: TrendingUp,
-      colorClass: stats.utilidadDespuesImpuestos >= 0 ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--destructive))]',
-      bgClass: stats.utilidadDespuesImpuestos >= 0 ? 'bg-[hsl(var(--success)/0.1)]' : 'bg-[hsl(var(--destructive)/0.1)]',
+      title: 'Total Anual',
+      value: formatCurrency(stats.totalAnualFacturado),
+      description: 'Ingresos facturados',
+      icon: Receipt,
+      colorClass: 'text-[hsl(var(--primary))]',
+      bgClass: 'bg-[hsl(var(--primary)/0.1)]',
     },
     {
       title: 'Dinero Disponible',
       value: formatCurrency(stats.dineroDisponible),
-      description: 'Capital de trabajo',
+      description: 'Ganancia neta disponible',
       icon: Wallet,
       colorClass: 'text-[hsl(var(--primary))]',
       bgClass: 'bg-[hsl(var(--primary)/0.1)]',
@@ -280,116 +287,95 @@ export default function Dashboard() {
   return (
     <Layout>
       <div className="space-y-8">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="flex items-center gap-3">
-                <h2 className="text-3xl font-bold tracking-tight">Panel de Control</h2>
-                {isAdmin && (
-                  <Badge variant="default" className="gap-1">
-                    <Shield className="h-3 w-3" />
-                    Admin
-                  </Badge>
-                )}
-              </div>
-              <p className="text-muted-foreground mt-1">
-                {isAdmin 
-                  ? 'Gestión financiera de tu negocio personal' 
-                  : 'Resumen completo de tus métricas financieras'
-                }
-              </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3">
+              <h2 className="text-3xl font-bold tracking-tight">Panel de Control</h2>
+              {isAdmin && (
+                <Badge variant="default" className="gap-1">
+                  <Shield className="h-3 w-3" />
+                  Admin
+                </Badge>
+              )}
             </div>
+            <p className="text-muted-foreground mt-1">
+              {isAdmin 
+                ? 'Gestión financiera de tu negocio personal' 
+                : 'Resumen completo de tus métricas financieras'
+              }
+            </p>
           </div>
 
-          {/* Filtro de Fechas */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                <CardTitle>Filtrar por Fecha</CardTitle>
+          {/* Filtro de Fechas - Compacto */}
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Periodo</Label>
+              <Select value={filterType} onValueChange={(value: 'all' | 'month' | 'range') => setFilterType(value)}>
+                <SelectTrigger className="w-[160px] h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todo</SelectItem>
+                  <SelectItem value="month">Por mes</SelectItem>
+                  <SelectItem value="range">Personalizado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {filterType === 'month' && (
+              <div className="space-y-1.5">
+                <Label htmlFor="month-filter" className="text-xs text-muted-foreground">Mes</Label>
+                <Input
+                  id="month-filter"
+                  type="month"
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="w-[160px] h-9"
+                />
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-wrap items-end gap-4">
-                  <div className="space-y-2">
-                    <Label>Tipo de Filtro</Label>
-                    <Select value={filterType} onValueChange={(value: 'all' | 'month' | 'range') => setFilterType(value)}>
-                      <SelectTrigger className="w-[200px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todo el periodo</SelectItem>
-                        <SelectItem value="month">Por mes</SelectItem>
-                        <SelectItem value="range">Rango personalizado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+            )}
 
-                  {filterType === 'month' && (
-                    <div className="space-y-2">
-                      <Label htmlFor="month-filter">Mes</Label>
-                      <Input
-                        id="month-filter"
-                        type="month"
-                        value={selectedMonth}
-                        onChange={(e) => setSelectedMonth(e.target.value)}
-                        className="w-[200px]"
-                      />
-                    </div>
-                  )}
-
-                  {filterType === 'range' && (
-                    <>
-                      <div className="space-y-2">
-                        <Label htmlFor="start-date">Fecha Inicio</Label>
-                        <Input
-                          id="start-date"
-                          type="date"
-                          value={startDate}
-                          onChange={(e) => setStartDate(e.target.value)}
-                          className="w-[180px]"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="end-date">Fecha Fin</Label>
-                        <Input
-                          id="end-date"
-                          type="date"
-                          value={endDate}
-                          onChange={(e) => setEndDate(e.target.value)}
-                          className="w-[180px]"
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {filterType !== 'all' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setFilterType('all');
-                        setStartDate('');
-                        setEndDate('');
-                      }}
-                      className="gap-2"
-                    >
-                      <X className="h-4 w-4" />
-                      Limpiar
-                    </Button>
-                  )}
+            {filterType === 'range' && (
+              <>
+                <div className="space-y-1.5">
+                  <Label htmlFor="start-date" className="text-xs text-muted-foreground">Desde</Label>
+                  <Input
+                    id="start-date"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-[150px] h-9"
+                  />
                 </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="end-date" className="text-xs text-muted-foreground">Hasta</Label>
+                  <Input
+                    id="end-date"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-[150px] h-9"
+                  />
+                </div>
+              </>
+            )}
 
-                {filterType !== 'all' && (
-                  <div className="text-sm text-muted-foreground">
-                    {filterType === 'month' && `Mostrando datos de: ${new Date(selectedMonth + '-01').toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })}`}
-                    {filterType === 'range' && startDate && endDate && `Mostrando datos desde ${new Date(startDate).toLocaleDateString('es-MX')} hasta ${new Date(endDate).toLocaleDateString('es-MX')}`}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+            {filterType !== 'all' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setFilterType('all');
+                  setStartDate('');
+                  setEndDate('');
+                }}
+                className="h-9 px-2"
+                title="Limpiar filtros"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Tarjetas Principales Destacadas */}
