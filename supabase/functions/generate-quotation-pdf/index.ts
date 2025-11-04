@@ -475,21 +475,22 @@ Deno.serve(async (req) => {
       throw new Error('No authorization header');
     }
 
-    const supabase = createClient(
+    // Create Supabase client with service role for admin operations
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Verify user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    // Verify user with the JWT token
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+    
     if (userError || !user) {
+      console.error('Auth error:', userError);
       throw new Error('Unauthorized');
     }
+
+    console.log('User authenticated:', user.id);
 
     const { quotationId } = await req.json();
 
@@ -498,7 +499,7 @@ Deno.serve(async (req) => {
     }
 
     // Fetch quotation with items and client
-    const { data: quotation, error: quotationError } = await supabase
+    const { data: quotation, error: quotationError } = await supabaseAdmin
       .from('quotations')
       .select(`
         *,
@@ -514,7 +515,7 @@ Deno.serve(async (req) => {
     }
 
     // Fetch user profile
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('first_name, last_name, business_name, fiscal_name, rfc, avatar_url')
       .eq('id', user.id)
