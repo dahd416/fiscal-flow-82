@@ -259,13 +259,13 @@ export function AddTransactionDialog({ open, onClose, userId, userName, onSucces
               <Label htmlFor="client_id">Cliente</Label>
               <Select
                 value={formData.client_id}
-                onValueChange={(value) => setFormData({ ...formData, client_id: value })}
+                onValueChange={(value) => setFormData({ ...formData, client_id: value === 'none' ? '' : value })}
               >
                 <SelectTrigger id="client_id">
                   <SelectValue placeholder="Seleccionar cliente (opcional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin cliente</SelectItem>
+                  <SelectItem value="none">Sin cliente</SelectItem>
                   {clients.map((client) => (
                     <SelectItem key={client.id} value={client.id}>
                       {client.first_name} {client.last_name || ''}
@@ -281,13 +281,13 @@ export function AddTransactionDialog({ open, onClose, userId, userName, onSucces
               <Label htmlFor="provider_id">Proveedor</Label>
               <Select
                 value={formData.provider_id}
-                onValueChange={(value) => setFormData({ ...formData, provider_id: value })}
+                onValueChange={(value) => setFormData({ ...formData, provider_id: value === 'none' ? '' : value })}
               >
                 <SelectTrigger id="provider_id">
                   <SelectValue placeholder="Seleccionar proveedor (opcional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin proveedor</SelectItem>
+                  <SelectItem value="none">Sin proveedor</SelectItem>
                   {providers.map((provider) => (
                     <SelectItem key={provider.id} value={provider.id}>
                       {provider.name}
