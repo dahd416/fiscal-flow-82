@@ -6,11 +6,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/currency';
-import { TrendingUp, TrendingDown, ArrowUpDown, Calendar, FileText, BarChart3, PieChart, User } from 'lucide-react';
+import { TrendingUp, TrendingDown, ArrowUpDown, Calendar, FileText, BarChart3, PieChart, User, Plus } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { AddTransactionDialog } from '@/components/admin/AddTransactionDialog';
 
 interface Transaction {
   id: string;
@@ -42,6 +43,7 @@ export function UserActivityPanel({ userId, userName }: UserActivityPanelProps) 
   const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [addTransactionOpen, setAddTransactionOpen] = useState(false);
   const [stats, setStats] = useState({
     totalIncome: 0,
     totalExpense: 0,
@@ -348,6 +350,14 @@ export function UserActivityPanel({ userId, userName }: UserActivityPanelProps) 
                   Historial de Transacciones
                   <Badge variant="secondary">{filteredTransactions.length}</Badge>
                 </span>
+                <Button 
+                  onClick={() => setAddTransactionOpen(true)}
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Agregar Transacción
+                </Button>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -530,6 +540,14 @@ export function UserActivityPanel({ userId, userName }: UserActivityPanelProps) 
           </Card>
         </TabsContent>
       </Tabs>
+
+      <AddTransactionDialog
+        open={addTransactionOpen}
+        onClose={() => setAddTransactionOpen(false)}
+        userId={userId}
+        userName={userName}
+        onSuccess={loadUserActivity}
+      />
     </div>
   );
 }
