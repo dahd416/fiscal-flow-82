@@ -3,10 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/currency';
-import { TrendingUp, TrendingDown, Users, DollarSign, Activity, User, Receipt, X } from 'lucide-react';
+import { TrendingUp, TrendingDown, Users, DollarSign, Activity, User, Receipt, X, Plus } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AddTransactionDialog } from '@/components/admin/AddTransactionDialog';
 
 interface Transaction {
   id: string;
@@ -37,6 +39,7 @@ export function GlobalActivityPanel() {
   const [loading, setLoading] = useState(true);
   const [userFilter, setUserFilter] = useState<string>('all');
   const [allUsers, setAllUsers] = useState<Array<{ id: string; name: string; role: string }>>([]);
+  const [addTransactionOpen, setAddTransactionOpen] = useState(false);
   const [globalStats, setGlobalStats] = useState({
     totalIncome: 0,
     totalExpense: 0,
@@ -238,16 +241,28 @@ export function GlobalActivityPanel() {
         </Card>
       </div>
 
-      {/* Filters */}
+      {/* Filters and Actions */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Filtrar por Usuario
-          </CardTitle>
-          <CardDescription>
-            Selecciona un usuario para ver su actividad financiera
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Filtrar por Usuario
+              </CardTitle>
+              <CardDescription>
+                Selecciona un usuario para ver su actividad financiera
+              </CardDescription>
+            </div>
+            <Button 
+              onClick={() => setAddTransactionOpen(true)}
+              className="gap-2"
+              disabled={userFilter === 'all'}
+            >
+              <Plus className="h-4 w-4" />
+              Agregar Transacción
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4 items-end">
@@ -273,14 +288,17 @@ export function GlobalActivityPanel() {
               </Select>
             </div>
             {userFilter !== 'all' && (
-              <button
-                onClick={clearFilters}
-                className="px-4 py-2 text-sm border rounded-md hover:bg-muted"
-              >
+              <Button variant="outline" onClick={clearFilters}>
                 Ver Todos
-              </button>
+              </Button>
             )}
           </div>
+          {userFilter === 'all' && (
+            <p className="text-sm text-muted-foreground mt-3 flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Selecciona un usuario para agregar transacciones
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -417,6 +435,17 @@ export function GlobalActivityPanel() {
             </CardContent>
           </Card>
       </div>
+
+      {/* Add Transaction Dialog */}
+      {userFilter !== 'all' && (
+        <AddTransactionDialog
+          userId={userFilter}
+          userName={allUsers.find(u => u.id === userFilter)?.name || ''}
+          open={addTransactionOpen}
+          onClose={() => setAddTransactionOpen(false)}
+          onSuccess={loadAllActivity}
+        />
+      )}
     </div>
   );
 }
