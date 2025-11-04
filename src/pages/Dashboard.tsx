@@ -135,10 +135,8 @@ export default function Dashboard() {
           return sum;
         }, 0);
       
-      // Impuestos a pagar (IVA recaudado)
-      const impuestosAPagar = transactions
-        .filter(t => t.type === 'income')
-        .reduce((sum, t) => sum + Number(t.vat_amount), 0);
+      // Impuestos a pagar (IVA Cobrado - IVA Pagado)
+      const impuestosAPagar = ingresosIVA - egresosIVA;
       
       // Total Anual Facturado (solo ingresos con factura)
       const totalAnualFacturado = transactions
@@ -258,18 +256,28 @@ export default function Dashboard() {
       title: 'Saldo Inicial',
       value: formatCurrency(stats.saldoInicial),
       icon: PiggyBank,
+      description: 'Capital inicial del periodo',
     },
     {
       title: 'Utilidad antes de Impuestos',
       value: formatCurrency(stats.utilidadAntesImpuestos),
       icon: TrendingUp,
       colorClass: stats.utilidadAntesImpuestos >= 0 ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--destructive))]',
+      description: 'Ingresos - Egresos',
+    },
+    {
+      title: 'Utilidad después de Impuestos',
+      value: formatCurrency(stats.utilidadDespuesImpuestos),
+      icon: DollarSign,
+      colorClass: stats.utilidadDespuesImpuestos >= 0 ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--destructive))]',
+      description: 'Utilidad - Resguardo IVA',
     },
     {
       title: 'Rendimiento',
       value: formatPercentage(stats.rendimiento),
       icon: TrendingUp,
       colorClass: stats.rendimiento >= 0 ? 'text-[hsl(var(--success))]' : 'text-[hsl(var(--destructive))]',
+      description: 'Porcentaje de utilidad sobre ingresos',
     },
   ];
 
@@ -279,12 +287,28 @@ export default function Dashboard() {
       value: formatCurrency(stats.resguardoImpuestos),
       icon: AlertCircle,
       colorClass: 'text-[hsl(var(--warning))]',
+      description: 'Retención según tipo de cliente',
     },
     {
-      title: 'Impuestos a Pagar (IVA)',
-      value: formatCurrency(stats.impuestosAPagar),
+      title: 'IVA Cobrado',
+      value: formatCurrency(stats.ingresosIVA),
+      icon: Receipt,
+      colorClass: 'text-[hsl(var(--primary))]',
+      description: 'IVA de ingresos facturados',
+    },
+    {
+      title: 'IVA Pagado',
+      value: formatCurrency(stats.egresosIVA),
       icon: FileText,
+      colorClass: 'text-[hsl(var(--destructive))]',
+      description: 'IVA de gastos deducibles',
+    },
+    {
+      title: 'IVA a Pagar',
+      value: formatCurrency(stats.impuestosAPagar),
+      icon: AlertCircle,
       colorClass: 'text-[hsl(var(--warning))]',
+      description: 'IVA Cobrado - IVA Pagado',
     },
   ];
 
@@ -502,7 +526,7 @@ export default function Dashboard() {
             <h3 className="text-xl font-semibold">Análisis de Rentabilidad</h3>
             <p className="text-sm text-muted-foreground">Métricas de desempeño financiero</p>
           </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {rentabilidadCards.map((card) => {
               const Icon = card.icon;
               return (
@@ -517,6 +541,11 @@ export default function Dashboard() {
                     <div className={`text-2xl font-bold ${card.colorClass || ''}`}>
                       {card.value}
                     </div>
+                    {card.description && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {card.description}
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
               );
@@ -530,7 +559,7 @@ export default function Dashboard() {
             <h3 className="text-xl font-semibold">Gestión Fiscal</h3>
             <p className="text-sm text-muted-foreground">Control de impuestos y obligaciones</p>
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {impuestosCards.map((card) => {
               const Icon = card.icon;
               return (
@@ -545,6 +574,11 @@ export default function Dashboard() {
                     <div className={`text-2xl font-bold ${card.colorClass || ''}`}>
                       {card.value}
                     </div>
+                    {card.description && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {card.description}
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
               );
