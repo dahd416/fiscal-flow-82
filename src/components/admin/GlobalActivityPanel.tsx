@@ -79,7 +79,7 @@ export function GlobalActivityPanel() {
     try {
       setLoading(true);
       
-      // Get all users with their roles
+      // Load all users with their roles (for filter dropdown)
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, first_name, last_name');
@@ -92,55 +92,75 @@ export function GlobalActivityPanel() {
 
       if (rolesError) throw rolesError;
 
-      // Create a map of users with their roles
       const usersWithRoles = (profilesData || [])
-        .filter(profile => {
-          const hasRole = rolesData?.some(r => r.user_id === profile.id);
-          return hasRole;
-        })
+        .filter(profile => rolesData?.some(r => r.user_id === profile.id))
         .map(profile => {
           const role = rolesData?.find(r => r.user_id === profile.id)?.role || 'user';
           const name = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Sin nombre';
-          return {
-            id: profile.id,
-            name,
-            role,
-          };
+          return { id: profile.id, name, role };
         });
 
       setAllUsers(usersWithRoles);
 
-      // Get all transactions with clients
-      const { data: transactionsData, error: transError } = await supabase
-        .from('transactions')
-        .select(`
-          *,
-          clients(first_name, last_name, vat_number),
-          quotations(quotation_number, title)
-        `)
-        .in('type', ['income', 'expense'])
-        .order('transaction_date', { ascending: false })
-        .limit(500);
-
-      if (transError) throw transError;
-
-      // Map profiles to transactions
-      const profilesMap = new Map(
-        profilesData?.map(p => [p.id, p]) || []
-      );
-
-      const enrichedTransactions: Transaction[] = (transactionsData || []).map(t => ({
-        ...t,
-        profiles: profilesMap.get(t.user_id) || null,
-      })) as Transaction[];
-
-      setTransactions(enrichedTransactions);
+      // Clear transactions until a user is selected
+      setTransactions([]);
     } catch (error) {
-      console.error('Error loading activity:', error);
+      console.error('Error loading users for activity:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  // Load transactions when a user is selected
+  const loadUserTransactions = async (targetUserId: string) => {
+    try {
+      setLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No session found');
+
+      const resp = await fetch(
+        `https://fpmkrchfjbftgnbmvahc.supabase.co/functions/v1/admin-get-user-transactions?userId=${targetUserId}`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || 'Error fetching user transactions');
+      }
+
+      const { transactions } = await resp.json();
+
+      // Enrich with user display name for the table
+      const selected = allUsers.find(u => u.id === targetUserId);
+      const enriched: Transaction[] = (transactions || []).map((t: any) => ({
+        ...t,
+        user_id: targetUserId,
+        profiles: selected ? { first_name: selected.name, last_name: null } : null,
+      }));
+
+      setTransactions(enriched);
+    } catch (e) {
+      console.error('Error loading user transactions:', e);
+      toast.error('Error al cargar transacciones del usuario');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (userFilter !== 'all') {
+      loadUserTransactions(userFilter);
+    } else {
+      setTransactions([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userFilter]);
 
   const calculateStats = () => {
     let filtered = transactions;
@@ -169,13 +189,33 @@ export function GlobalActivityPanel() {
   const handleDeleteTransaction = async () => {
     if (!deleteTransactionId) return;
     try {
-      const { error } = await supabase
-        .from('transactions')
-        .delete()
-        .eq('id', deleteTransactionId);
-      if (error) throw error;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No session found');
+
+      const resp = await fetch(
+        'https://fpmkrchfjbftgnbmvahc.supabase.co/functions/v1/admin-manage-user-transaction',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'delete',
+            transactionId: deleteTransactionId,
+          }),
+        }
+      );
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || 'Error deleting transaction');
+      }
+
       toast.success('Transacción eliminada correctamente');
-      await loadAllActivity();
+      if (userFilter !== 'all') {
+        await loadUserTransactions(userFilter);
+      }
     } catch (error) {
       console.error('Error deleting transaction:', error);
       toast.error('Error al eliminar la transacción');
@@ -510,7 +550,7 @@ export function GlobalActivityPanel() {
           userName={allUsers.find(u => u.id === userFilter)?.name || ''}
           open={addTransactionOpen}
           onClose={() => setAddTransactionOpen(false)}
-          onSuccess={loadAllActivity}
+          onSuccess={() => loadUserTransactions(userFilter)}
         />
       )}
 
@@ -523,7 +563,7 @@ export function GlobalActivityPanel() {
           setEditTransactionOpen(false);
           setSelectedTransaction(null);
         }}
-        onSuccess={loadAllActivity}
+        onSuccess={() => loadUserTransactions(userFilter)}
       />
 
       {/* Delete Confirmation */}
