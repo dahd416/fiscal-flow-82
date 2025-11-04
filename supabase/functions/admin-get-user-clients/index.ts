@@ -24,18 +24,10 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Extract user id from verified JWT
     const token = authHeader.replace("Bearer ", "");
-    let adminUserId: string | null = null;
-    try {
-      const payloadB64 = token.split(".")[1];
-      const payload = JSON.parse(atob(payloadB64));
-      adminUserId = payload?.sub ?? null;
-    } catch (e) {
-      console.log("JWT parse error", e);
-    }
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
-    if (!adminUserId) {
+    if (authError || !user) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -45,7 +37,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: userRole, error: roleError } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", adminUserId)
+      .eq("user_id", user.id)
       .maybeSingle();
 
     if (roleError || !userRole || (userRole.role !== "admin" && userRole.role !== "super_admin")) {

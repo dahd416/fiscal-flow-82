@@ -23,32 +23,12 @@ serve(async (req) => {
       }
     );
 
-    // Verificar autenticación del admin (extraer userId del JWT ya verificado por Supabase)
-    const authHeader = req.headers.get('Authorization') || '';
-    const token = authHeader.replace('Bearer ', '').trim();
+    // Verificar autenticación del admin
+    const authHeader = req.headers.get('Authorization')!;
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
-    if (!token) {
-      return new Response(
-        JSON.stringify({ error: 'No autorizado' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const parts = token.split('.');
-    if (parts.length < 2) {
-      return new Response(
-        JSON.stringify({ error: 'No autorizado' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const base64Url = parts[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const payloadJson = atob(base64);
-    const payload = JSON.parse(payloadJson);
-    const userId: string | undefined = payload.sub || payload.user_id;
-
-    if (!userId) {
+    if (authError || !user) {
       return new Response(
         JSON.stringify({ error: 'No autorizado' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -56,15 +36,13 @@ serve(async (req) => {
     }
 
     // Verificar que el usuario sea admin o super_admin
-    const { data: roles, error: roleError } = await supabaseAdmin
+    const { data: roleData, error: roleError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
-      .eq('user_id', userId)
-      .in('role', ['admin', 'super_admin']);
+      .eq('user_id', user.id)
+      .single();
 
-    const isAdmin = !roleError && Array.isArray(roles) && roles.some(r => r.role === 'admin' || r.role === 'super_admin');
-
-    if (!isAdmin) {
+    if (roleError || !roleData || (roleData.role !== 'admin' && roleData.role !== 'super_admin')) {
       return new Response(
         JSON.stringify({ error: 'No tienes permisos para realizar esta acción' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

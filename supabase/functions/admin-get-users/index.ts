@@ -13,10 +13,7 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    // Service client for privileged operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Verify the requesting user is an admin
@@ -28,25 +25,15 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Extract user id from verified JWT (Supabase verifies the JWT before invoking this function)
     const token = authHeader.replace("Bearer ", "");
-    let userId: string | null = null;
-    try {
-      const payloadB64 = token.split(".")[1];
-      const payload = JSON.parse(atob(payloadB64));
-      userId = payload?.sub ?? null;
-    } catch (e) {
-      console.log("JWT parse error", e);
-    }
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
-    if (!userId) {
+    if (authError || !user) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const user = { id: userId };
 
     // Check if user is admin or super_admin
     const { data: userRole, error: roleError } = await supabase

@@ -160,17 +160,8 @@ export default function AdminUsers() {
     try {
       setLoading(true);
 
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
-      if (!accessToken) {
-        throw new Error('No hay sesión activa');
-      }
-
       const { data, error } = await supabase.functions.invoke('admin-get-users', {
-        body: {},
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+        method: 'POST',
       });
 
       if (error) throw error;
