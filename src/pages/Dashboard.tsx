@@ -64,14 +64,20 @@ export default function Dashboard() {
     const fetchStats = async () => {
       const dateFilter = getDateFilter();
       
-      const [clientsRes, transactionsRes, clientsDataRes] = await Promise.all([
+      const [clientsRes, transactionsRes, clientsDataRes, taxSettingsRes] = await Promise.all([
         supabase.from('clients').select('*', { count: 'exact', head: true }),
         supabase.from('transactions').select('*, clients(person_type)'),
         supabase.from('clients').select('*'),
+        supabase.from('tax_settings').select('*').single(),
       ]);
 
       let transactions = transactionsRes.data || [];
       const clientsData = clientsDataRes.data || [];
+      const taxSettings = taxSettingsRes.data;
+      
+      // Tasas por defecto si no hay configuración
+      const personaFisicaRate = taxSettings?.persona_fisica_rate || 13.79;
+      const personaMoralRate = taxSettings?.persona_moral_rate || 0;
       
       // Aplicar filtro de fechas si existe
       if (dateFilter) {
@@ -118,11 +124,14 @@ export default function Dashboard() {
           const client = clientsData.find(c => c.id === t.client_id);
           const personType = client?.person_type;
           
-          // Si es Persona Física: COBRADO × 16/116
+          // Si es Persona Física: COBRADO × tasa configurada / 100
           if (personType === 'Persona Física') {
-            return sum + (Number(t.amount) * 16 / 116);
+            return sum + (Number(t.amount) * personaFisicaRate / 100);
           }
-          // Si es Persona Moral: 0
+          // Si es Persona Moral: COBRADO × tasa configurada / 100
+          if (personType === 'Persona Moral') {
+            return sum + (Number(t.amount) * personaMoralRate / 100);
+          }
           return sum;
         }, 0);
       

@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { EditUserDialog } from '@/components/admin/EditUserDialog';
 import { UserActivityPanel } from '@/components/admin/UserActivityPanel';
 import { PlatformCustomization } from '@/components/admin/PlatformCustomization';
+import { TaxSettings } from '@/components/admin/TaxSettings';
 import { GlobalActivityPanel } from '@/components/admin/GlobalActivityPanel';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -32,7 +33,8 @@ import {
   X, 
   Crown,
   Activity,
-  Users
+  Users,
+  Receipt
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
@@ -330,18 +332,22 @@ export default function AdminUsers() {
           </div>
 
           <Tabs defaultValue="users" className="space-y-6">
-            <TabsList className="grid w-full max-w-2xl grid-cols-3">
+            <TabsList className="grid w-full max-w-3xl grid-cols-4">
               <TabsTrigger value="users" className="gap-2">
                 <Users className="h-4 w-4" />
-                Lista de Usuarios
+                Usuarios
               </TabsTrigger>
               <TabsTrigger value="activity" className="gap-2">
                 <Activity className="h-4 w-4" />
-                Actividad Financiera
+                Actividad
               </TabsTrigger>
               <TabsTrigger value="customization" className="gap-2">
                 <Shield className="h-4 w-4" />
                 Personalización
+              </TabsTrigger>
+              <TabsTrigger value="taxes" className="gap-2">
+                <Receipt className="h-4 w-4" />
+                Impuestos
               </TabsTrigger>
             </TabsList>
 
@@ -618,6 +624,10 @@ export default function AdminUsers() {
 
             <TabsContent value="customization">
               <PlatformCustomization />
+            </TabsContent>
+
+            <TabsContent value="taxes">
+              <TaxSettings />
             </TabsContent>
           </Tabs>
         </div>

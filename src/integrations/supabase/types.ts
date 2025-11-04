@@ -354,6 +354,30 @@ export type Database = {
           },
         ]
       }
+      tax_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          persona_fisica_rate: number
+          persona_moral_rate: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          persona_fisica_rate?: number
+          persona_moral_rate?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          persona_fisica_rate?: number
+          persona_moral_rate?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       transaction_concepts: {
         Row: {
           concept: string
