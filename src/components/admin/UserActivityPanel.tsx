@@ -89,15 +89,31 @@ export function UserActivityPanel({ userId, userName }: UserActivityPanelProps) 
     try {
       setLoading(true);
       
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('No session found');
+      }
+
       // Use admin edge function to fetch transactions for any user
-      const { data, error } = await supabase.functions.invoke(
-        `admin-get-user-transactions?userId=${userId}`,
+      const response = await fetch(
+        `https://fpmkrchfjbftgnbmvahc.supabase.co/functions/v1/admin-get-user-transactions?userId=${userId}`,
         {
           method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
         }
       );
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error fetching transactions');
+      }
+
+      const data = await response.json();
       setTransactions((data?.transactions as any[])?.filter(t => t.type === 'income' || t.type === 'expense') || []);
     } catch (error) {
       console.error('Error loading user activity:', error);
@@ -191,12 +207,31 @@ export function UserActivityPanel({ userId, userName }: UserActivityPanelProps) 
     if (!deleteTransactionId) return;
 
     try {
-      const { error } = await supabase
-        .from('transactions')
-        .delete()
-        .eq('id', deleteTransactionId);
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('No session found');
+      }
 
-      if (error) throw error;
+      const response = await fetch(
+        'https://fpmkrchfjbftgnbmvahc.supabase.co/functions/v1/admin-manage-user-transaction',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'delete',
+            transactionId: deleteTransactionId,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error deleting transaction');
+      }
 
       toast.success('Transacción eliminada correctamente');
       loadUserActivity();
@@ -625,6 +660,7 @@ export function UserActivityPanel({ userId, userName }: UserActivityPanelProps) 
       {/* Edit Transaction Dialog */}
       <EditTransactionDialog
         transaction={selectedTransaction}
+        userId={userId}
         open={editTransactionOpen}
         onClose={() => {
           setEditTransactionOpen(false);

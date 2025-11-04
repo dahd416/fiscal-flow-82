@@ -517,6 +517,7 @@ export function GlobalActivityPanel() {
       {/* Edit Transaction Dialog */}
       <EditTransactionDialog
         transaction={selectedTransaction}
+        userId={selectedTransaction?.user_id || ''}
         open={editTransactionOpen}
         onClose={() => {
           setEditTransactionOpen(false);

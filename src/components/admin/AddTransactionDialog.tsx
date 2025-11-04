@@ -56,14 +56,29 @@ export function AddTransactionDialog({ open, onClose, userId, userName, onSucces
 
   const loadClients = async () => {
     try {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('id, first_name, last_name')
-        .eq('user_id', userId)
-        .order('first_name');
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('No session found');
+      }
 
-      if (error) throw error;
-      setClients(data || []);
+      const response = await fetch(
+        `https://fpmkrchfjbftgnbmvahc.supabase.co/functions/v1/admin-get-user-clients?userId=${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Error fetching clients');
+      }
+
+      const data = await response.json();
+      setClients(data.clients || []);
     } catch (error) {
       console.error('Error loading clients:', error);
     }
@@ -71,14 +86,29 @@ export function AddTransactionDialog({ open, onClose, userId, userName, onSucces
 
   const loadProviders = async () => {
     try {
-      const { data, error } = await supabase
-        .from('providers')
-        .select('id, name')
-        .eq('user_id', userId)
-        .order('name');
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('No session found');
+      }
 
-      if (error) throw error;
-      setProviders(data || []);
+      const response = await fetch(
+        `https://fpmkrchfjbftgnbmvahc.supabase.co/functions/v1/admin-get-user-providers?userId=${userId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Error fetching providers');
+      }
+
+      const data = await response.json();
+      setProviders(data.providers || []);
     } catch (error) {
       console.error('Error loading providers:', error);
     }
@@ -119,25 +149,47 @@ export function AddTransactionDialog({ open, onClose, userId, userName, onSucces
 
       const amounts = calculateAmounts();
 
-      // Insertar transacción
-      const { error } = await supabase.from('transactions').insert({
-        user_id: userId,
-        type: validatedData.type,
-        amount: amounts.total,
-        subtotal: amounts.subtotal,
-        vat_rate: validatedData.vat_rate,
-        vat_amount: amounts.vat_amount,
-        concept: validatedData.concept,
-        description: validatedData.description || null,
-        folio: validatedData.folio || null,
-        payment_method: validatedData.payment_method,
-        is_invoice: formData.is_invoice,
-        transaction_date: validatedData.transaction_date,
-        client_id: formData.client_id || null,
-        provider_id: formData.provider_id || null,
-      });
+      // Usar edge function para insertar transacción
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('No session found');
+      }
 
-      if (error) throw error;
+      const response = await fetch(
+        'https://fpmkrchfjbftgnbmvahc.supabase.co/functions/v1/admin-manage-user-transaction',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'create',
+            transactionData: {
+              user_id: userId,
+              type: validatedData.type,
+              amount: amounts.total,
+              subtotal: amounts.subtotal,
+              vat_rate: validatedData.vat_rate,
+              vat_amount: amounts.vat_amount,
+              concept: validatedData.concept,
+              description: validatedData.description || null,
+              folio: validatedData.folio || null,
+              payment_method: validatedData.payment_method,
+              is_invoice: formData.is_invoice,
+              transaction_date: validatedData.transaction_date,
+              client_id: formData.client_id || null,
+              provider_id: formData.provider_id || null,
+            }
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error creating transaction');
+      }
 
       toast.success(`${validatedData.type === 'income' ? 'Ingreso' : 'Egreso'} agregado correctamente`);
       onSuccess();
