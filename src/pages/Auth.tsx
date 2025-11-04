@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { usePlatformSettings } from '@/hooks/usePlatformSettings';
+import { TrendingUp, ArrowLeft } from 'lucide-react';
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -27,6 +29,8 @@ export default function Auth() {
   const [emailError, setEmailError] = useState('');
   const [invitationToken, setInvitationToken] = useState<string | null>(null);
   const [invitationEmail, setInvitationEmail] = useState<string | null>(null);
+  
+  const { platformSettings } = usePlatformSettings();
   
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -177,11 +181,37 @@ export default function Auth() {
   // Reset password form (after clicking email link)
   if (mode === 'reset') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Restablecer Contraseña</CardTitle>
-            <CardDescription>Ingresa tu nueva contraseña</CardDescription>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-primary/5 to-background p-4">
+        <Card className="w-full max-w-md shadow-2xl border-primary/20">
+          <CardHeader className="space-y-3">
+            <div className="flex justify-center mb-2">
+              {platformSettings?.logo_url ? (
+                <div 
+                  className={`p-3 rounded-xl ${
+                    platformSettings.logo_background_enabled 
+                      ? 'shadow-lg' 
+                      : ''
+                  }`}
+                  style={{
+                    backgroundColor: platformSettings.logo_background_enabled 
+                      ? platformSettings.logo_background_color || 'hsl(var(--primary))'
+                      : 'transparent'
+                  }}
+                >
+                  <img 
+                    src={platformSettings.logo_url} 
+                    alt={platformSettings.platform_name}
+                    className="h-12 w-auto"
+                  />
+                </div>
+              ) : (
+                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-primary" />
+                </div>
+              )}
+            </div>
+            <CardTitle className="text-2xl text-center">Restablecer Contraseña</CardTitle>
+            <CardDescription className="text-center">Ingresa tu nueva contraseña</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleResetPassword} className="space-y-4">
@@ -220,11 +250,37 @@ export default function Auth() {
   // Forgot password form
   if (showForgotPassword) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Recuperar Contraseña</CardTitle>
-            <CardDescription>Ingresa tu correo para recibir un enlace de restablecimiento</CardDescription>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-primary/5 to-background p-4">
+        <Card className="w-full max-w-md shadow-2xl border-primary/20">
+          <CardHeader className="space-y-3">
+            <div className="flex justify-center mb-2">
+              {platformSettings?.logo_url ? (
+                <div 
+                  className={`p-3 rounded-xl ${
+                    platformSettings.logo_background_enabled 
+                      ? 'shadow-lg' 
+                      : ''
+                  }`}
+                  style={{
+                    backgroundColor: platformSettings.logo_background_enabled 
+                      ? platformSettings.logo_background_color || 'hsl(var(--primary))'
+                      : 'transparent'
+                  }}
+                >
+                  <img 
+                    src={platformSettings.logo_url} 
+                    alt={platformSettings.platform_name}
+                    className="h-12 w-auto"
+                  />
+                </div>
+              ) : (
+                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-primary" />
+                </div>
+              )}
+            </div>
+            <CardTitle className="text-2xl text-center">Recuperar Contraseña</CardTitle>
+            <CardDescription className="text-center">Ingresa tu correo para recibir un enlace de restablecimiento</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleForgotPassword} className="space-y-4">
@@ -252,9 +308,10 @@ export default function Auth() {
               <Button
                 type="button"
                 variant="ghost"
-                className="w-full"
+                className="w-full gap-2"
                 onClick={() => setShowForgotPassword(false)}
               >
+                <ArrowLeft className="h-4 w-4" />
                 Volver al inicio de sesión
               </Button>
             </form>
@@ -265,17 +322,49 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Control Financiero</CardTitle>
-          <CardDescription>Gestiona tus ingresos, clientes y declaraciones de IVA</CardDescription>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-primary/5 to-background p-4">
+      <Card className="w-full max-w-md shadow-2xl border-primary/20 backdrop-blur-sm">
+        <CardHeader className="space-y-4 pb-6">
+          <div className="flex justify-center mb-2">
+            {platformSettings?.logo_url ? (
+              <div 
+                className={`p-3 rounded-xl transition-all duration-300 hover:scale-105 ${
+                  platformSettings.logo_background_enabled 
+                    ? 'shadow-lg hover:shadow-xl' 
+                    : ''
+                }`}
+                style={{
+                  backgroundColor: platformSettings.logo_background_enabled 
+                    ? platformSettings.logo_background_color || 'hsl(var(--primary))'
+                    : 'transparent'
+                }}
+              >
+                <img 
+                  src={platformSettings.logo_url} 
+                  alt={platformSettings.platform_name}
+                  className="h-16 w-auto"
+                />
+              </div>
+            ) : (
+              <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-lg">
+                <TrendingUp className="h-8 w-8 text-primary-foreground" />
+              </div>
+            )}
+          </div>
+          <div className="text-center space-y-2">
+            <CardTitle className="text-3xl font-bold">
+              {platformSettings?.platform_name || 'Control Financiero'}
+            </CardTitle>
+            <CardDescription className="text-base">
+              Gestiona tus ingresos, clientes y declaraciones de IVA
+            </CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="signin">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Iniciar Sesión</TabsTrigger>
-              <TabsTrigger value="signup">Registrarse</TabsTrigger>
+          <Tabs defaultValue="signin" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="signin" className="text-base">Iniciar Sesión</TabsTrigger>
+              <TabsTrigger value="signup" className="text-base">Registrarse</TabsTrigger>
             </TabsList>
             
             <TabsContent value="signin">
