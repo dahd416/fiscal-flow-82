@@ -88,20 +88,20 @@ export function UserActivityPanel({ userId, userName }: UserActivityPanelProps) 
   const loadUserActivity = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('transactions')
-        .select(`
-          *,
-          clients(first_name, last_name),
-          quotations(quotation_number, title)
-        `)
-        .eq('user_id', userId)
-        .order('transaction_date', { ascending: false });
+      
+      // Use admin edge function to fetch transactions for any user
+      const { data, error } = await supabase.functions.invoke(
+        `admin-get-user-transactions?userId=${userId}`,
+        {
+          method: 'GET',
+        }
+      );
 
       if (error) throw error;
-      setTransactions((data as any[])?.filter(t => t.type === 'income' || t.type === 'expense') || []);
+      setTransactions((data?.transactions as any[])?.filter(t => t.type === 'income' || t.type === 'expense') || []);
     } catch (error) {
       console.error('Error loading user activity:', error);
+      toast.error('Error al cargar las transacciones del usuario');
     } finally {
       setLoading(false);
     }
