@@ -27,16 +27,35 @@ export function PDFPreviewDialog({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (open && iframeRef.current && htmlContent) {
-      const iframe = iframeRef.current;
-      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (open && htmlContent) {
+      setLoading(true);
       
-      if (doc) {
-        doc.open();
-        doc.write(htmlContent);
-        doc.close();
-        setLoading(false);
-      }
+      // Small delay to ensure iframe is mounted
+      const timer = setTimeout(() => {
+        const iframe = iframeRef.current;
+        if (iframe) {
+          try {
+            const doc = iframe.contentDocument || iframe.contentWindow?.document;
+            
+            if (doc) {
+              doc.open();
+              doc.write(htmlContent);
+              doc.close();
+              
+              // Wait for content to render
+              setTimeout(() => {
+                setLoading(false);
+              }, 300);
+            }
+          } catch (error) {
+            console.error('Error loading PDF preview:', error);
+            setLoading(false);
+            toast.error('Error al cargar la vista previa');
+          }
+        }
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
   }, [open, htmlContent]);
 
@@ -100,9 +119,8 @@ export function PDFPreviewDialog({
           )}
           <iframe
             ref={iframeRef}
-            className="w-full h-full border-0"
+            className="w-full h-full border-0 bg-white"
             title="PDF Preview"
-            sandbox="allow-same-origin allow-scripts"
           />
         </div>
       </DialogContent>
