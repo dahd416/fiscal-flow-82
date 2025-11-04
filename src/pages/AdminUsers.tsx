@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EditUserDialog } from '@/components/admin/EditUserDialog';
+import { AddUserDialog } from '@/components/admin/AddUserDialog';
 import { UserActivityPanel } from '@/components/admin/UserActivityPanel';
 import { PlatformCustomization } from '@/components/admin/PlatformCustomization';
 import { TaxSettings } from '@/components/admin/TaxSettings';
@@ -81,6 +82,7 @@ export default function AdminUsers() {
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [editSubscriptionUser, setEditSubscriptionUser] = useState<UserWithRole | null>(null);
   const [editUser, setEditUser] = useState<UserWithRole | null>(null);
+  const [addUserOpen, setAddUserOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
   const [subscriptionEndDate, setSubscriptionEndDate] = useState('');
   const [subscriptionDuration, setSubscriptionDuration] = useState('30');
@@ -324,12 +326,21 @@ export default function AdminUsers() {
                 Gestión de usuarios, actividad financiera y personalización
               </p>
             </div>
-            <Link to="/invite-user">
-              <Button className="gap-2">
+            <div className="flex gap-2">
+              <Button 
+                className="gap-2"
+                onClick={() => setAddUserOpen(true)}
+              >
                 <UserPlus className="h-4 w-4" />
-                Invitar Usuario
+                Agregar Usuario
               </Button>
-            </Link>
+              <Link to="/invite-user">
+                <Button variant="outline" className="gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Invitar Usuario
+                </Button>
+              </Link>
+            </div>
           </div>
 
           <Tabs defaultValue="users" className="space-y-6">
@@ -640,6 +651,12 @@ export default function AdminUsers() {
         </div>
 
         {/* Dialogs */}
+        <AddUserDialog
+          open={addUserOpen}
+          onClose={() => setAddUserOpen(false)}
+          onSuccess={loadUsers}
+        />
+
         <EditUserDialog
           user={editUser}
           open={!!editUser}
