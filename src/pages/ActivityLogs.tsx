@@ -190,7 +190,7 @@ export default function ActivityLogs() {
   };
 
   const filteredLogs = getFilteredLogs();
-  const uniqueTables = Array.from(new Set(logs.map(log => log.table_name)));
+  const uniqueTables = Array.from(new Set(logs.map(log => log.table_name).filter(table => table && table.trim())));
 
   if (roleLoading || loading) {
     return (

@@ -274,7 +274,7 @@ export function GlobalActivityPanel() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos los usuarios</SelectItem>
-                  {allUsers.map(user => (
+                  {allUsers.filter(user => user.id && user.id.trim()).map(user => (
                     <SelectItem key={user.id} value={user.id}>
                       <div className="flex items-center gap-2">
                         <span>{user.name}</span>
