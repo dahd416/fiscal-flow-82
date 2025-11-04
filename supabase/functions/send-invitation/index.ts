@@ -98,8 +98,10 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Create invitation link
+    // Extract project ID from Supabase URL to construct the app URL
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const invitationLink = `${supabaseUrl.replace("supabase.co", "lovable.app")}/auth?invitation=${invitationToken}`;
+    const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || "";
+    const invitationLink = `https://preview--fiscal-flow-82.lovable.app/auth?invitation=${invitationToken}`;
 
     // Send email
     const emailResponse = await resend.emails.send({

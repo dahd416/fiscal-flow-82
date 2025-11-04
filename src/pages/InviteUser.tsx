@@ -51,14 +51,17 @@ export default function InviteUser() {
       });
 
       if (error) {
+        console.error('Error invoking function:', error);
         throw error;
       }
 
       if (data?.error) {
+        console.error('Function returned error:', data.error);
         throw new Error(data.error);
       }
 
-      toast.success('Invitación enviada exitosamente');
+      console.log('Invitation sent successfully:', data);
+      toast.success('Invitación enviada exitosamente. El usuario recibirá un correo con el enlace de registro.');
       setEmail('');
     } catch (error: any) {
       console.error('Error sending invitation:', error);
