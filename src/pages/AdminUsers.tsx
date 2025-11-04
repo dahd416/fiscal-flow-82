@@ -161,7 +161,7 @@ export default function AdminUsers() {
       setLoading(true);
 
       const { data, error } = await supabase.functions.invoke('admin-get-users', {
-        method: 'POST',
+        body: {},
       });
 
       if (error) throw error;

@@ -33,10 +33,24 @@ const handler = async (req: Request): Promise<Response> => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    const token = authHeader.replace("Bearer ", "");
 
-    if (authError || !user) {
-      console.log("Auth error:", authError);
+    let user = null as any;
+    // Try with anon client passing the token explicitly
+    const { data: anonUserRes, error: anonErr } = await supabaseAuth.auth.getUser(token);
+    if (!anonErr && anonUserRes?.user) {
+      user = anonUserRes.user;
+    } else {
+      // Fallback: try with service client as well
+      const { data: svcUserRes, error: svcErr } = await supabase.auth.getUser(token);
+      if (!svcErr && svcUserRes?.user) {
+        user = svcUserRes.user;
+      }
+      if (anonErr) console.log("Anon getUser error:", anonErr?.message || anonErr);
+      if (svcErr) console.log("Service getUser error:", svcErr?.message || svcErr);
+    }
+
+    if (!user) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
