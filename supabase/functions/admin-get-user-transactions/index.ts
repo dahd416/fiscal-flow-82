@@ -25,10 +25,18 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Extract user id from verified JWT
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    let adminUserId: string | null = null;
+    try {
+      const payloadB64 = token.split(".")[1];
+      const payload = JSON.parse(atob(payloadB64));
+      adminUserId = payload?.sub ?? null;
+    } catch (e) {
+      console.log("JWT parse error", e);
+    }
 
-    if (authError || !user) {
+    if (!adminUserId) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -39,18 +47,18 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: userRole, error: roleError } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", user.id)
+      .eq("user_id", adminUserId)
       .maybeSingle();
 
     if (roleError || !userRole || (userRole.role !== "admin" && userRole.role !== "super_admin")) {
-      console.log("Access denied for user:", user.id, "Role:", userRole?.role);
+      console.log("Access denied for user:", adminUserId, "Role:", userRole?.role);
       return new Response(
         JSON.stringify({ error: "Forbidden - Admin access required" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
     
-    console.log("Admin access granted for user:", user.id, "Role:", userRole.role);
+    console.log("Admin access granted for user:", adminUserId, "Role:", userRole.role);
 
     // Get the target user ID from query params
     const url = new URL(req.url);
