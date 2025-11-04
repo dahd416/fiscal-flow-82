@@ -10,7 +10,6 @@ import Clients from "./pages/Clients";
 import Transactions from "./pages/Transactions";
 import VatPeriods from "./pages/VatPeriods";
 import Quotations from "./pages/Quotations";
-import InviteUser from "./pages/InviteUser";
 import AdminUsers from "./pages/AdminUsers";
 import ActivityLogs from "./pages/ActivityLogs";
 import Profile from "./pages/Profile";
@@ -47,7 +46,6 @@ const App = () => (
             <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
             <Route path="/quotations" element={<ProtectedRoute><Quotations /></ProtectedRoute>} />
             <Route path="/vat-periods" element={<ProtectedRoute><VatPeriods /></ProtectedRoute>} />
-            <Route path="/invite-user" element={<ProtectedRoute><InviteUser /></ProtectedRoute>} />
             <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
             <Route path="/admin/activity-logs" element={<ProtectedRoute><ActivityLogs /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

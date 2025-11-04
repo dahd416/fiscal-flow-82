@@ -334,12 +334,6 @@ export default function AdminUsers() {
                 <UserPlus className="h-4 w-4" />
                 Agregar Usuario
               </Button>
-              <Link to="/invite-user">
-                <Button variant="outline" className="gap-2">
-                  <UserPlus className="h-4 w-4" />
-                  Invitar Usuario
-                </Button>
-              </Link>
             </div>
           </div>
 

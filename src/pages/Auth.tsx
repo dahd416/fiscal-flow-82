@@ -27,8 +27,6 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
-  const [invitationToken, setInvitationToken] = useState<string | null>(null);
-  const [invitationEmail, setInvitationEmail] = useState<string | null>(null);
   
   const { platformSettings } = usePlatformSettings();
   
@@ -68,12 +66,6 @@ export default function Auth() {
       return;
     }
     
-    // Si hay invitación, validar que el email coincida
-    if (invitationToken && invitationEmail && email !== invitationEmail) {
-      toast.error('El correo debe coincidir con la invitación');
-      return;
-    }
-    
     // Validar contraseña
     const hasMinLength = password.length >= 6;
     const hasUpperCase = /[A-Z]/.test(password);
@@ -86,14 +78,6 @@ export default function Auth() {
     setLoading(true);
     try {
       await signUp(email, password, firstName, lastName, rfc);
-      
-      // Si hay token de invitación, marcar como aceptada
-      if (invitationToken) {
-        await supabase
-          .from('user_invitations')
-          .update({ status: 'accepted' })
-          .eq('token', invitationToken);
-      }
     } finally {
       setLoading(false);
     }
@@ -139,40 +123,6 @@ export default function Auth() {
   };
 
   useEffect(() => {
-    const invitation = searchParams.get('invitation');
-    if (invitation) {
-      setInvitationToken(invitation);
-      // Fetch invitation details
-      const fetchInvitation = async () => {
-        const { data, error } = await supabase
-          .from('user_invitations')
-          .select('email, status, expires_at')
-          .eq('token', invitation)
-          .single();
-        
-        if (error || !data) {
-          toast.error('Invitación inválida o expirada');
-          return;
-        }
-        
-        if (data.status !== 'pending') {
-          toast.error('Esta invitación ya fue utilizada');
-          return;
-        }
-        
-        const expiresAt = new Date(data.expires_at);
-        if (expiresAt < new Date()) {
-          toast.error('Esta invitación ha expirado');
-          return;
-        }
-        
-        setInvitationEmail(data.email);
-        setEmail(data.email);
-      };
-      
-      fetchInvitation();
-    }
-    
     if (mode === 'reset') {
       // User clicked the reset link in their email
     }
@@ -458,14 +408,8 @@ export default function Auth() {
                     }}
                     onBlur={() => validateEmail(email)}
                     required
-                    disabled={!!invitationEmail}
                     className={emailError ? 'border-destructive' : ''}
                   />
-                  {invitationEmail && (
-                    <p className="text-sm text-muted-foreground">
-                      Email pre-asignado por invitación
-                    </p>
-                  )}
                   {emailError && (
                     <p className="text-sm text-destructive">{emailError}</p>
                   )}
