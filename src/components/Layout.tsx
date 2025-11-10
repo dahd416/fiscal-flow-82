@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
@@ -20,6 +20,20 @@ export function Layout({ children }: LayoutProps) {
   const { isAdmin } = useIsAdmin();
   const { platformSettings } = usePlatformSettings();
   const location = useLocation();
+
+  useEffect(() => {
+    if (platformSettings?.favicon_url) {
+      let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
+      if (link) {
+        link.href = platformSettings.favicon_url;
+      } else {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        link.href = platformSettings.favicon_url;
+        document.getElementsByTagName('head')[0].appendChild(link);
+      }
+    }
+  }, [platformSettings]);
 
   const { data: profile } = useQuery({
     queryKey: ['profile', user?.id],
