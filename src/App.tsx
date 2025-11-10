@@ -1,9 +1,11 @@
+import { useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
+import { usePlatformSettings } from './hooks/usePlatformSettings';
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
@@ -31,13 +33,35 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Component to manage the favicon globally
+const DynamicFavicon = () => {
+  const { platformSettings } = usePlatformSettings();
+
+  useEffect(() => {
+    if (platformSettings?.favicon_url) {
+      let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
+      if (link) {
+        link.href = platformSettings.favicon_url;
+      } else {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        link.href = platformSettings.favicon_url;
+        document.getElementsByTagName('head')[0].appendChild(link);
+      }
+    }
+  }, [platformSettings]);
+
+  return null; // This component doesn't render anything
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <DynamicFavicon />
+          <Toaster />
+          <Sonner />
           <Routes>
             <Route path="/" element={<Navigate to="/auth" replace />} />
             <Route path="/auth" element={<Auth />} />
